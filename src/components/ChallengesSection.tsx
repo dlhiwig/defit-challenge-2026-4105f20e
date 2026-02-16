@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import ChallengeCard from "./ChallengeCard";
 
 const challenges = [
@@ -57,7 +58,27 @@ const challenges = [
   },
 ];
 
+const MISSION_END = new Date("2026-03-22T23:59:59");
+
 const ChallengesSection = () => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const diff = Math.max(0, MISSION_END.getTime() - now.getTime());
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section id="challenges" className="py-24 relative">
       <div className="container px-4">
@@ -70,6 +91,27 @@ const ChallengesSection = () => {
             Choose from hundreds of missions designed by elite trainers. 
             Begin your training and earn your badge.
           </p>
+
+          {/* Countdown Clock */}
+          <div className="mt-8 inline-flex items-center gap-1 sm:gap-3 glass rounded-2xl px-6 py-4">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground mr-2 hidden sm:inline">Mission Ends In</span>
+            {([
+              { value: timeLeft.days, label: "Days" },
+              { value: timeLeft.hours, label: "Hrs" },
+              { value: timeLeft.minutes, label: "Min" },
+              { value: timeLeft.seconds, label: "Sec" },
+            ] as const).map((unit, i) => (
+              <div key={unit.label} className="flex items-center gap-1 sm:gap-3">
+                {i > 0 && <span className="text-primary font-bold text-xl">:</span>}
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl sm:text-3xl font-heading font-bold text-gradient tabular-nums">
+                    {String(unit.value).padStart(2, "0")}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{unit.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Challenge Grid */}
