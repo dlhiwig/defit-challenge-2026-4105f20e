@@ -95,6 +95,45 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_config: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      commands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       digest_queue: {
         Row: {
           admin_comment: string | null
@@ -396,6 +435,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          command_id: string | null
           created_at: string
           email_notifications: boolean
           full_name: string | null
@@ -410,6 +450,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          command_id?: string | null
           created_at?: string
           email_notifications?: boolean
           full_name?: string | null
@@ -424,6 +465,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          command_id?: string | null
           created_at?: string
           email_notifications?: boolean
           full_name?: string | null
@@ -436,6 +478,68 @@ export type Database = {
           unit_category?: Database["public"]["Enums"]["unit_category"] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "commands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranking_snapshots: {
+        Row: {
+          calculated_at: string
+          component_a: number
+          component_b: number
+          component_c: number
+          component_d: number
+          component_e: number
+          component_f: number | null
+          entity_id: string
+          entity_name: string
+          final_rank: number
+          id: string
+          level: string
+          metadata: Json | null
+          raw_values: Json | null
+          total_score: number
+        }
+        Insert: {
+          calculated_at?: string
+          component_a?: number
+          component_b?: number
+          component_c?: number
+          component_d?: number
+          component_e?: number
+          component_f?: number | null
+          entity_id: string
+          entity_name: string
+          final_rank?: number
+          id?: string
+          level: string
+          metadata?: Json | null
+          raw_values?: Json | null
+          total_score?: number
+        }
+        Update: {
+          calculated_at?: string
+          component_a?: number
+          component_b?: number
+          component_c?: number
+          component_d?: number
+          component_e?: number
+          component_f?: number | null
+          entity_id?: string
+          entity_name?: string
+          final_rank?: number
+          id?: string
+          level?: string
+          metadata?: Json | null
+          raw_values?: Json | null
+          total_score?: number
         }
         Relationships: []
       }
@@ -487,6 +591,62 @@ export type Database = {
           verified_at?: string | null
           verified_by?: string | null
           weight_per_rep?: number
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          id: string
+          joined_at: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          is_usar: boolean
+          name: string
+          roster_locked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_usar?: boolean
+          name: string
+          roster_locked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_usar?: boolean
+          name?: string
+          roster_locked_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
