@@ -27,6 +27,7 @@ import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import Rankings from "./pages/Rankings";
 import Scoring from "./pages/Scoring";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/missions/:slug" element={<MissionDetail />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/scoring" element={<Scoring />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

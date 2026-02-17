@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, LogIn, UserPlus } from 'lucide-react';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 import defitLogo from '@/assets/defit-logo.png';
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -40,6 +41,7 @@ export default function Auth() {
   } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [forgotOpen, setForgotOpen] = useState(false);
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
@@ -152,9 +154,16 @@ export default function Auth() {
                           <FormMessage />
                         </FormItem>} />
                     <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
-                      <Shield className="w-4 h-4 mr-2" />
-                      {isLoading ? 'Signing in...' : 'Sign In'}
-                    </Button>
+                       <Shield className="w-4 h-4 mr-2" />
+                       {isLoading ? 'Signing in...' : 'Sign In'}
+                     </Button>
+                     <button
+                       type="button"
+                       className="text-sm text-muted-foreground hover:text-primary transition-colors text-right w-full"
+                       onClick={() => setForgotOpen(true)}
+                     >
+                       Forgot password?
+                     </button>
                   </form>
                 </Form>
               </TabsContent>
@@ -210,6 +219,7 @@ export default function Auth() {
         </div>
       </section>
 
+      <ForgotPasswordModal open={forgotOpen} onOpenChange={setForgotOpen} />
       <Footer />
     </main>;
 }
