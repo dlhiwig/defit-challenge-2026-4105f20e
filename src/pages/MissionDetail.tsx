@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   useMissionDetail, useJoinMission, useLeaveMission, useCompleteMissionDay,
+  useEffectiveWorkout,
   type ScheduleDay, type MissionPhase, type WorkoutStep,
 } from "@/hooks/useMissions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,17 +61,27 @@ function StepRow({ step }: { step: WorkoutStep }) {
 
 function DayCard({
   day,
+  missionSlug,
   missionId,
   totalDays,
   isEnrolled,
 }: {
   day: ScheduleDay;
+  missionSlug: string;
   missionId: string;
   totalDays: number;
   isEnrolled: boolean;
 }) {
   const completeDay = useCompleteMissionDay();
-  const isComplete = day.progress_status === "completed";
+  const { data: effective, isLoading: loadingEffective } = useEffectiveWorkout(missionSlug, day.day_number);
+  
+  const steps = effective?.computed_steps || day.steps;
+  const workoutTitle = effective?.computed_workout?.title || day.workout.title;
+  const workoutDesc = effective?.computed_workout?.description || day.workout.description;
+  const estMinutes = effective?.computed_workout?.estimated_minutes || day.workout.estimated_minutes;
+  const equipment = (effective?.computed_workout?.equipment || day.workout.equipment) as string[];
+  const modifiers = effective?.applied_modifiers || [];
+  const isComplete = (effective?.user_day_status || day.progress_status) === "completed";
 
   return (
     <Card className={`glass ${isComplete ? "border-green-700/50" : ""}`}>
@@ -82,21 +93,37 @@ function DayCard({
             {isComplete && <Check className="w-4 h-4 text-green-400" />}
           </CardTitle>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {day.workout.estimated_minutes} min
+            <Clock className="w-3 h-3" /> {estMinutes} min
           </span>
         </div>
-        <p className="text-sm font-medium text-foreground">{day.workout.title}</p>
-        {day.workout.description && (
-          <p className="text-xs text-muted-foreground">{day.workout.description}</p>
+        <p className="text-sm font-medium text-foreground">{workoutTitle}</p>
+        {workoutDesc && (
+          <p className="text-xs text-muted-foreground">{workoutDesc}</p>
         )}
       </CardHeader>
       <CardContent className="space-y-1.5">
-        {day.steps.map((step) => (
-          <StepRow key={step.id} step={step} />
-        ))}
-        {day.workout.equipment && (day.workout.equipment as string[]).filter(e => e !== "none").length > 0 && (
+        {loadingEffective ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <span className="text-xs text-muted-foreground ml-2">Computing workout...</span>
+          </div>
+        ) : (
+          <>
+            {steps.map((step) => (
+              <StepRow key={step.id} step={step} />
+            ))}
+            {modifiers.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {modifiers.map((mod, i) => (
+                  <p key={i} className="text-xs text-primary/70 italic">{mod}</p>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        {equipment.filter(e => e !== "none").length > 0 && (
           <p className="text-xs text-muted-foreground mt-2">
-            Equipment: {(day.workout.equipment as string[]).filter(e => e !== "none").join(", ")}
+            Equipment: {equipment.filter(e => e !== "none").join(", ")}
           </p>
         )}
         {isEnrolled && !isComplete && (
@@ -298,6 +325,7 @@ export default function MissionDetail() {
                       <DayCard
                         key={day.id}
                         day={day}
+                        missionSlug={mission.slug}
                         missionId={mission.id}
                         totalDays={schedule.length}
                         isEnrolled={!!isActive}
@@ -312,6 +340,7 @@ export default function MissionDetail() {
                   <DayCard
                     key={day.id}
                     day={day}
+                    missionSlug={mission.slug}
                     missionId={mission.id}
                     totalDays={schedule.length}
                     isEnrolled={!!isActive}

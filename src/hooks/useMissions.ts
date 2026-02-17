@@ -360,3 +360,65 @@ export function useCompleteMissionDay() {
     },
   });
 }
+
+export interface EffectiveWorkout {
+  mission: {
+    title: string;
+    slug: string;
+    focus: string;
+    difficulty: string;
+    duration_days: number;
+  };
+  day_number: number;
+  phase: {
+    phase_number: number;
+    title: string;
+    start_day: number;
+    end_day: number;
+  } | null;
+  computed_workout: {
+    id: string;
+    title: string;
+    description: string | null;
+    estimated_minutes: number;
+    equipment: string[];
+  };
+  computed_steps: WorkoutStep[];
+  applied_modifiers: string[];
+  user_day_status: string | null;
+}
+
+export function useEffectiveWorkout(slug: string, dayNumber: number) {
+  const { session } = useAuth();
+
+  return useQuery({
+    queryKey: ['effective-workout', slug, dayNumber],
+    queryFn: async (): Promise<EffectiveWorkout | null> => {
+      if (isDemoMode) return null;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/compute-effective-workout?slug=${encodeURIComponent(slug)}&day=${dayNumber}`,
+        { headers }
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 404) return null;
+        throw new Error(body.error || 'Failed to load effective workout');
+      }
+
+      return res.json();
+    },
+    enabled: !!slug && dayNumber > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
