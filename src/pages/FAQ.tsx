@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BackToTop from "@/components/BackToTop";
@@ -122,7 +123,29 @@ const FAQGroup = ({ title, items, idPrefix }: FAQGroupProps) => (
   </div>
 );
 
+const allFAQs = [...generalFAQs, ...scoringFAQs, ...privacyFAQs, ...testPhaseFAQs];
+
 const FAQ = () => {
+  useEffect(() => {
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: allFAQs.map((faq) => ({
+        "@type": "Question",
+        name: faq.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.a,
+        },
+      })),
+    };
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(jsonLd);
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  }, []);
+
   return (
     <main className="min-h-screen bg-background texture-canvas">
       <Navbar />
