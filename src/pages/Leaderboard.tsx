@@ -72,6 +72,34 @@ export default function Leaderboard() {
 
   useEffect(() => {
     fetchLeaderboard();
+
+    // JSON-LD schema markup
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "DEFIT Leaderboard – Challenge Rankings",
+      "description": "Track top performers in the 10-week Double Eagle Fitness Challenge. View individual and unit rankings by cardio, strength, HIIT, and TMAR-M completion.",
+      "url": window.location.href,
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "DEFIT – Double Eagle Fitness Challenge",
+        "url": window.location.origin,
+      },
+      "about": {
+        "@type": "SportsEvent",
+        "name": "Double Eagle Fitness Challenge 2026",
+        "description": "A 10-week fitness challenge for Army Reserve soldiers and supporters.",
+        "startDate": "2026-01-12",
+        "endDate": "2026-03-22",
+      },
+    };
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
   }, []);
 
   const fetchLeaderboard = async () => {
