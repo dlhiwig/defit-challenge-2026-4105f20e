@@ -138,12 +138,12 @@ export default function Rankings() {
                             <TableRow className="border-border hover:bg-transparent">
                               <TableHead className="w-16">Rank</TableHead>
                               <TableHead>Name</TableHead>
-                              <TableHead className="text-center">A</TableHead>
-                              <TableHead className="text-center">B</TableHead>
-                              <TableHead className="text-center">C</TableHead>
-                              <TableHead className="text-center">D</TableHead>
-                              <TableHead className="text-center">E</TableHead>
-                              {hasF && <TableHead className="text-center">F</TableHead>}
+                              <TableHead className="text-center">Cardio</TableHead>
+                              <TableHead className="text-center">Resistance</TableHead>
+                              <TableHead className="text-center">HIIT</TableHead>
+                              <TableHead className="text-center">TMAR-M</TableHead>
+                              <TableHead className="text-center">Consistency</TableHead>
+                              {hasF && <TableHead className="text-center">Completion</TableHead>}
                               <TableHead className="text-center font-bold">Total</TableHead>
                             </TableRow>
                           </TableHeader>
