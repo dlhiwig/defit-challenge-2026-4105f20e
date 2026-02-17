@@ -220,16 +220,25 @@ export default function Leaderboard() {
         </div>
       </section>
 
-      {/* Navigation Tabs */}
+      {/* Navigation to New Rankings */}
       <section className="pb-6">
         <div className="container px-4">
-          <div className="flex justify-center gap-4">
-            <Button variant="default">
-              Individual Rankings
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/leaderboard/units">Unit Rankings</Link>
-            </Button>
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20 max-w-xl">
+              <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">New OML-Style Rankings Available</p>
+                <p className="text-xs text-muted-foreground">View the official rank-based scoring system with Individual, Team, Unit, and Command levels.</p>
+              </div>
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button variant="hero" asChild>
+                <Link to="/rankings">View OML Rankings</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/leaderboard/units">Unit Leaderboard</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
