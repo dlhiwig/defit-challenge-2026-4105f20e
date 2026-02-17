@@ -270,10 +270,10 @@ export default function SecurityCompliance() {
               <div className="glass rounded-xl p-6 inline-flex items-center gap-3">
                 <Mail className="w-5 h-5 text-primary" />
                 <a
-                  href="mailto:security@defit.mil"
+                  href="mailto:security@defit.work"
                   className="text-primary font-heading font-semibold hover:underline"
                 >
-                  security@defit.mil
+                  security@defit.work
                 </a>
               </div>
             </div>
