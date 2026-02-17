@@ -23,6 +23,8 @@ import ReportIssue from "./pages/ReportIssue";
 import ContactPOC from "./pages/ContactPOC";
 import SecurityCompliance from "./pages/SecurityCompliance";
 import NotFound from "./pages/NotFound";
+import Missions from "./pages/Missions";
+import MissionDetail from "./pages/MissionDetail";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/report-issue" element={<ReportIssue />} />
             <Route path="/contact" element={<ContactPOC />} />
             <Route path="/security" element={<SecurityCompliance />} />
+            <Route path="/missions" element={<Missions />} />
+            <Route path="/missions/:slug" element={<MissionDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

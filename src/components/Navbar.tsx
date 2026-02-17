@@ -20,6 +20,9 @@ const Navbar = () => {
     label: "Resources",
     href: "/resources"
   }, {
+    label: "Missions",
+    href: "/missions"
+  }, {
     label: "FAQ",
     href: "/faq"
   }, {
