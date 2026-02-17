@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.compute-effective-workout]
 verify_jwt = false
+
+[functions.get-rankings]
+verify_jwt = false

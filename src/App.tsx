@@ -25,6 +25,8 @@ import SecurityCompliance from "./pages/SecurityCompliance";
 import NotFound from "./pages/NotFound";
 import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
+import Rankings from "./pages/Rankings";
+import Scoring from "./pages/Scoring";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +58,8 @@ const App = () => (
             <Route path="/security" element={<SecurityCompliance />} />
             <Route path="/missions" element={<Missions />} />
             <Route path="/missions/:slug" element={<MissionDetail />} />
+            <Route path="/rankings" element={<Rankings />} />
+            <Route path="/scoring" element={<Scoring />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
