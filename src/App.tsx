@@ -21,6 +21,7 @@ import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
 import ReportIssue from "./pages/ReportIssue";
 import ContactPOC from "./pages/ContactPOC";
+import SecurityCompliance from "./pages/SecurityCompliance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
             <Route path="/report-issue" element={<ReportIssue />} />
             <Route path="/contact" element={<ContactPOC />} />
+            <Route path="/security" element={<SecurityCompliance />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

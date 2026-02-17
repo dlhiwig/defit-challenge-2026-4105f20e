@@ -116,6 +116,12 @@ const Footer = () => {
               >
                 Terms of Service
               </Link>
+              <Link
+                to="/security"
+                className="hover:text-primary transition-colors"
+              >
+                Security & Compliance
+              </Link>
             </div>
           </div>
         </div>
