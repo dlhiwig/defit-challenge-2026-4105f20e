@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Clock, Dumbbell, Flame, Heart, BarChart3, ArrowLeft, LogOut, Loader2, History, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MyMissions } from '@/components/dashboard/MyMissions';
 
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState('summary');
@@ -126,6 +127,13 @@ function DashboardContent() {
           <p className="text-sm text-primary mt-1">
             Logged in as: {user.email}
           </p>
+        </div>
+      </section>
+
+      {/* My Missions */}
+      <section className="pb-4">
+        <div className="container px-4">
+          <MyMissions />
         </div>
       </section>
 
