@@ -215,6 +215,143 @@ export type Database = {
         }
         Relationships: []
       }
+      mission_phases: {
+        Row: {
+          created_at: string
+          end_day: number
+          id: string
+          mission_id: string
+          phase_number: number
+          progression_rules: Json | null
+          start_day: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_day: number
+          id?: string
+          mission_id: string
+          phase_number: number
+          progression_rules?: Json | null
+          start_day: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_day?: number
+          id?: string
+          mission_id?: string
+          phase_number?: number
+          progression_rules?: Json | null
+          start_day?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_phases_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_schedule: {
+        Row: {
+          created_at: string
+          day_number: number
+          id: string
+          mission_id: string
+          phase_number: number | null
+          scaling_overrides: Json | null
+          updated_at: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_number: number
+          id?: string
+          mission_id: string
+          phase_number?: number | null
+          scaling_overrides?: Json | null
+          updated_at?: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          day_number?: number
+          id?: string
+          mission_id?: string
+          phase_number?: number | null
+          scaling_overrides?: Json | null
+          updated_at?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_schedule_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_schedule_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missions: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          duration_days: number
+          duration_weeks: number | null
+          focus: Database["public"]["Enums"]["mission_focus"]
+          id: string
+          is_published: boolean
+          short_description: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          duration_days: number
+          duration_weeks?: number | null
+          focus: Database["public"]["Enums"]["mission_focus"]
+          id?: string
+          is_published?: boolean
+          short_description: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["mission_difficulty"]
+          duration_days?: number
+          duration_weeks?: number | null
+          focus?: Database["public"]["Enums"]["mission_focus"]
+          id?: string
+          is_published?: boolean
+          short_description?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           admin_comment: string | null
@@ -392,6 +529,104 @@ export type Database = {
         }
         Relationships: []
       }
+      user_mission_day_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          day_number: number
+          id: string
+          mission_id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["day_progress_status"]
+          updated_at: string
+          user_id: string
+          workout_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          day_number: number
+          id?: string
+          mission_id: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["day_progress_status"]
+          updated_at?: string
+          user_id: string
+          workout_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          day_number?: number
+          id?: string
+          mission_id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["day_progress_status"]
+          updated_at?: string
+          user_id?: string
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mission_day_progress_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_mission_day_progress_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_missions: {
+        Row: {
+          completed_at: string | null
+          completion_percent: number
+          current_day_number: number
+          id: string
+          joined_at: string
+          last_activity_at: string | null
+          mission_id: string
+          status: Database["public"]["Enums"]["mission_status"]
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_percent?: number
+          current_day_number?: number
+          id?: string
+          joined_at?: string
+          last_activity_at?: string | null
+          mission_id: string
+          status?: Database["public"]["Enums"]["mission_status"]
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completion_percent?: number
+          current_day_number?: number
+          id?: string
+          joined_at?: string
+          last_activity_at?: string | null
+          mission_id?: string
+          status?: Database["public"]["Enums"]["mission_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_missions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -410,11 +645,156 @@ export type Database = {
         }
         Relationships: []
       }
+      user_workout_step_progress: {
+        Row: {
+          completed_at: string | null
+          day_number: number
+          id: string
+          is_complete: boolean
+          mission_id: string
+          user_id: string
+          value: Json | null
+          workout_id: string
+          workout_step_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          day_number: number
+          id?: string
+          is_complete?: boolean
+          mission_id: string
+          user_id: string
+          value?: Json | null
+          workout_id: string
+          workout_step_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          day_number?: number
+          id?: string
+          is_complete?: boolean
+          mission_id?: string
+          user_id?: string
+          value?: Json | null
+          workout_id?: string
+          workout_step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_workout_step_progress_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_workout_step_progress_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_workout_step_progress_workout_step_id_fkey"
+            columns: ["workout_step_id"]
+            isOneToOne: false
+            referencedRelation: "workout_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_steps: {
+        Row: {
+          distance_meters: number | null
+          id: string
+          load_lbs: number | null
+          name: string
+          notes: string | null
+          order_index: number
+          reps: number | null
+          rest_seconds: number | null
+          sets: number | null
+          step_type: Database["public"]["Enums"]["step_type"]
+          work_seconds: number | null
+          workout_id: string
+        }
+        Insert: {
+          distance_meters?: number | null
+          id?: string
+          load_lbs?: number | null
+          name: string
+          notes?: string | null
+          order_index?: number
+          reps?: number | null
+          rest_seconds?: number | null
+          sets?: number | null
+          step_type?: Database["public"]["Enums"]["step_type"]
+          work_seconds?: number | null
+          workout_id: string
+        }
+        Update: {
+          distance_meters?: number | null
+          id?: string
+          load_lbs?: number | null
+          name?: string
+          notes?: string | null
+          order_index?: number
+          reps?: number | null
+          rest_seconds?: number | null
+          sets?: number | null
+          step_type?: Database["public"]["Enums"]["step_type"]
+          work_seconds?: number | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_steps_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          description: string | null
+          equipment: Json | null
+          estimated_minutes: number
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          equipment?: Json | null
+          estimated_minutes?: number
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          equipment?: Json | null
+          estimated_minutes?: number
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_mission_participant_count: {
+        Args: { p_mission_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -426,6 +806,21 @@ export type Database = {
     Enums: {
       app_role: "admin" | "soldier"
       cardio_type: "run_walk_ruck" | "bike" | "swim" | "row_elliptical"
+      day_progress_status:
+        | "not_started"
+        | "in_progress"
+        | "completed"
+        | "skipped"
+      mission_difficulty: "beginner" | "intermediate" | "advanced"
+      mission_focus:
+        | "strength"
+        | "cardio"
+        | "endurance"
+        | "core"
+        | "recovery"
+        | "extreme"
+      mission_status: "active" | "completed" | "abandoned"
+      step_type: "exercise" | "interval" | "rest"
       unit_category:
         | "veterans"
         | "government"
@@ -562,6 +957,23 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "soldier"],
       cardio_type: ["run_walk_ruck", "bike", "swim", "row_elliptical"],
+      day_progress_status: [
+        "not_started",
+        "in_progress",
+        "completed",
+        "skipped",
+      ],
+      mission_difficulty: ["beginner", "intermediate", "advanced"],
+      mission_focus: [
+        "strength",
+        "cardio",
+        "endurance",
+        "core",
+        "recovery",
+        "extreme",
+      ],
+      mission_status: ["active", "completed", "abandoned"],
+      step_type: ["exercise", "interval", "rest"],
       unit_category: [
         "veterans",
         "government",
