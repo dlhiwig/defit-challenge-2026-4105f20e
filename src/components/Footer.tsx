@@ -13,7 +13,7 @@ const footerLinks = {
     { label: "Safety Guidelines", href: "/resources" },
   ],
   Support: [
-    { label: "Contact POC", href: "#" },
+    { label: "Contact POC", href: "/contact" },
     { label: "FAQ", href: "/faq" },
     { label: "Report Issue", href: "/report-issue" },
   ],
