@@ -245,6 +245,8 @@ const ReportIssue = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               This page is used to report technical issues, system errors, or
               platform malfunctions within the DEFIT website or application.
+              All submissions are processed within our private networking
+              infrastructure with SOC 2 and HIPAA compliance.
             </p>
           </div>
         </div>

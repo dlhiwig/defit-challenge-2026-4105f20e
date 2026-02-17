@@ -216,9 +216,12 @@ const Privacy = () => {
               5. Security & Data Protection Measures
             </h2>
             <p className="text-muted-foreground mb-4">
-              We implement reasonable technical and organizational measures to protect your data:
+              We implement reasonable technical and organizational measures to protect your data. The DEFIT platform operates on private networking infrastructure with <strong>SOC 2</strong> and <strong>HIPAA</strong> compliance standards to ensure the confidentiality, integrity, and availability of your information:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+              <li><strong>Private Networking:</strong> All backend services operate within a private network architecture, limiting exposure to the public internet</li>
+              <li><strong>SOC 2 Compliance:</strong> Our infrastructure provider maintains SOC 2 Type II certification, ensuring rigorous controls over security, availability, and confidentiality</li>
+              <li><strong>HIPAA Compliance:</strong> Given the health-related nature of fitness data, our platform adheres to HIPAA-compliant data handling and storage practices</li>
               <li><strong>Encryption in Transit:</strong> All data transmitted between your device and our servers is encrypted using HTTPS/TLS</li>
               <li><strong>Encryption at Rest:</strong> Sensitive data stored in our database is encrypted</li>
               <li><strong>Secure Authentication:</strong> Passwords are hashed using industry-standard algorithms; we never store plaintext passwords</li>
