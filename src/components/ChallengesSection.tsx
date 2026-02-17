@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import ChallengeCard from "./ChallengeCard";
 
 const challenges = [
@@ -123,9 +124,9 @@ const ChallengesSection = () => {
 
         {/* View All Button */}
         <div className="text-center mt-12">
-          <button className="text-primary font-heading font-semibold hover:underline underline-offset-4 transition-all uppercase tracking-wider">
+          <Link to="/missions" className="text-primary font-heading font-semibold hover:underline underline-offset-4 transition-all uppercase tracking-wider">
             View All Missions →
-          </button>
+          </Link>
         </div>
       </div>
     </section>
