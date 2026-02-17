@@ -25,7 +25,7 @@ const pocs = [
       "Executive-level coordination, strategic alignment, policy questions, and interagency or senior leader engagement.",
     name: "[Full Name]",
     title: "DEFIT Program Lead",
-    email: "program.lead@defit.mil",
+    email: "program.lead@defit.work",
     response: "Within 1 business day",
   },
   {
@@ -36,7 +36,7 @@ const pocs = [
       "Platform functionality, authentication issues, account access problems, system errors, and integration inquiries.",
     name: "[Full Name]",
     title: "DEFIT Technical Lead",
-    email: "tech.lead@defit.mil",
+    email: "tech.lead@defit.work",
     response: "Within 1 business day",
     extra: {
       label: "When reporting technical issues, please include:",
@@ -60,7 +60,7 @@ const pocs = [
       "Registration questions, team enrollment, eligibility, scoring clarifications, leaderboard discrepancies, and challenge rules.",
     name: "[Full Name]",
     title: "DEFIT Operations Lead",
-    email: "operations@defit.mil",
+    email: "operations@defit.work",
     response: "Within 1 business day",
   },
   {
@@ -71,7 +71,7 @@ const pocs = [
       "Messaging, promotional materials, briefings, graphics, coordination with leadership offices, and distribution support.",
     name: "[Full Name]",
     title: "DEFIT Communications Lead",
-    email: "comms@defit.mil",
+    email: "comms@defit.work",
     response: "Within 1–2 business days",
   },
 ];
@@ -269,10 +269,10 @@ const ContactPOC = () => {
                   <Mail className="w-3.5 h-3.5 text-primary" />
                   <span className="text-muted-foreground">Submit to:</span>{" "}
                   <a
-                    href="mailto:beta.feedback@defit.mil"
+                    href="mailto:beta.feedback@defit.work"
                     className="text-primary hover:underline font-medium"
                   >
-                    beta.feedback@defit.mil
+                    beta.feedback@defit.work
                   </a>
                 </div>
                 <p className="text-muted-foreground text-xs">
@@ -316,10 +316,10 @@ const ContactPOC = () => {
                 <div className="flex items-center gap-1 text-sm">
                   <Mail className="w-3.5 h-3.5 text-primary" />
                   <a
-                    href="mailto:info@defit.mil"
+                    href="mailto:info@defit.work"
                     className="text-primary hover:underline font-medium"
                   >
-                    info@defit.mil
+                    info@defit.work
                   </a>
                 </div>
               </div>

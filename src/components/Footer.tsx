@@ -20,7 +20,7 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Mail, href: "mailto:contact@defitchallenge.com", label: "Email" },
+  { icon: Mail, href: "mailto:info@defit.work", label: "Email" },
   { icon: Instagram, href: "#", label: "Instagram" },
   { icon: Facebook, href: "#", label: "Facebook" },
   { icon: Youtube, href: "#", label: "YouTube" },
