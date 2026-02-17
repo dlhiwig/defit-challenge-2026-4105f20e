@@ -15,7 +15,7 @@ const footerLinks = {
   Support: [
     { label: "Contact POC", href: "#" },
     { label: "FAQ", href: "/faq" },
-    { label: "Report Issue", href: "#" },
+    { label: "Report Issue", href: "/report-issue" },
   ],
 };
 
