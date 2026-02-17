@@ -1,5 +1,6 @@
 import { Clock, Users, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface ChallengeCardProps {
   title: string;
@@ -70,8 +71,8 @@ const ChallengeCard = ({
           </div>
         </div>
 
-        <Button variant="outline" className="w-full font-heading uppercase tracking-wider">
-          Join Mission
+        <Button variant="outline" className="w-full font-heading uppercase tracking-wider" asChild>
+          <Link to="/missions">Join Mission</Link>
         </Button>
       </div>
     </div>
