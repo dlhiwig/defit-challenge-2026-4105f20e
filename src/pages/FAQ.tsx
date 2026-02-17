@@ -62,7 +62,7 @@ const scoringFAQs = [
 const privacyFAQs = [
   {
     q: "Is my personal data secure?",
-    a: "Yes. DEFIT is designed with data protection principles in mind. Only necessary participation data is collected. Information is stored securely and is not used for unrelated purposes.",
+    a: "Yes. DEFIT operates on private networking infrastructure with SOC 2 and HIPAA compliance standards. Only necessary participation data is collected, stored with encryption at rest and in transit, and is not used for unrelated purposes.",
   },
   {
     q: "Who can see my activity?",

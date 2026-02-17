@@ -118,7 +118,8 @@ const ContactPOC = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Official Points of Contact for the DEFIT platform and program.
               Use the role-based guidance below to ensure your inquiry is routed
-              appropriately.
+              appropriately. All communications are handled within our private
+              networking infrastructure with SOC 2 and HIPAA compliance.
             </p>
           </div>
         </div>

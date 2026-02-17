@@ -104,7 +104,7 @@ const Terms = () => {
 
               <h3 className="text-lg font-heading font-medium text-foreground mt-4 mb-2">3.4 Security</h3>
               <p>
-                We implement reasonable administrative, technical, and physical security measures to protect your data from unauthorized access, disclosure, alteration, or destruction. However, no method of transmission over the Internet or electronic storage is completely secure. <strong>We cannot guarantee absolute security of your data</strong>, and you acknowledge and accept this inherent risk.
+                We implement reasonable administrative, technical, and physical security measures to protect your data from unauthorized access, disclosure, alteration, or destruction. The DEFIT platform operates on <strong>private networking infrastructure</strong> with <strong>SOC 2</strong> and <strong>HIPAA</strong> compliance standards to safeguard the confidentiality, integrity, and availability of your data. However, no method of transmission over the Internet or electronic storage is completely secure. <strong>We cannot guarantee absolute security of your data</strong>, and you acknowledge and accept this inherent risk.
               </p>
             </section>
 
