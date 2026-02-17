@@ -201,7 +201,7 @@ const Privacy = () => {
               To request account deletion or data removal:
             </p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-              <li>Contact us at <strong>info@blackeagleproject.org</strong> with the subject line "Data Deletion Request"</li>
+              <li>Contact us at <strong>info@defit.work</strong> with the subject line "Data Deletion Request"</li>
               <li>Include your registered email address and full name for verification</li>
               <li>We will process your request within 30 days</li>
             </ol>
@@ -337,7 +337,7 @@ const Privacy = () => {
               We do not knowingly collect personal information from children under 13 years of age. If we discover that a child under 13 has provided us with personal information, we will promptly delete such data.
             </p>
             <p className="text-muted-foreground mt-4">
-              If you believe a minor has registered without proper consent, please contact us immediately at <strong>info@blackeagleproject.org</strong>.
+              If you believe a minor has registered without proper consent, please contact us immediately at <strong>info@defit.work</strong>.
             </p>
           </section>
 
@@ -375,7 +375,7 @@ const Privacy = () => {
                 Homestead, FL 33032
               </p>
               <p className="text-muted-foreground mt-4">
-                <strong>Email:</strong> info@blackeagleproject.org<br />
+                <strong>Email:</strong> info@defit.work<br />
                 <strong>Subject Line:</strong> "DEFIT Privacy Inquiry"
               </p>
             </div>

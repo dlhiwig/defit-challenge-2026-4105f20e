@@ -94,7 +94,7 @@ const Terms = () => {
 
               <h3 className="text-lg font-heading font-medium text-foreground mt-4 mb-2">3.3 Data Retention and Deletion</h3>
               <p>
-                We retain your data for as long as your account is active or as needed to provide you with the Service. You may request deletion of your account and associated personal data by contacting us at info@blackeagleproject.org. Upon receiving a valid deletion request, we will:
+                We retain your data for as long as your account is active or as needed to provide you with the Service. You may request deletion of your account and associated personal data by contacting us at info@defit.work. Upon receiving a valid deletion request, we will:
               </p>
               <ul>
                 <li>Remove or anonymize your personal information from our active systems within a reasonable timeframe.</li>
@@ -246,7 +246,7 @@ const Terms = () => {
               </h2>
               <h3 className="text-lg font-heading font-medium text-foreground mt-4 mb-2">8.1 Voluntary Termination</h3>
               <p>
-                You may terminate your account at any time by contacting us at info@blackeagleproject.org or using the account deletion feature (if available) within the Service. Upon voluntary termination, your account will be deactivated and your personal data will be handled in accordance with Section 3.3 (Data Retention and Deletion).
+                You may terminate your account at any time by contacting us at info@defit.work or using the account deletion feature (if available) within the Service. Upon voluntary termination, your account will be deactivated and your personal data will be handled in accordance with Section 3.3 (Data Retention and Deletion).
               </p>
 
               <h3 className="text-lg font-heading font-medium text-foreground mt-4 mb-2">8.2 Termination by Organization</h3>
@@ -313,7 +313,7 @@ const Terms = () => {
               <address className="not-italic text-muted-foreground bg-card border border-border rounded-md p-4 mt-2">
                 <strong className="text-foreground">Black Eagle Project, Inc.</strong><br />
                 13720 SW 271st Ln, Homestead, FL 33032<br />
-                Email: info@blackeagleproject.org<br />
+                Email: info@defit.work<br />
                 EIN: 92-0713659
               </address>
             </section>
@@ -365,7 +365,7 @@ const Terms = () => {
                 If you have any questions about these Terms of Service or the DEFIT Challenge, please contact us at:
               </p>
               <p className="text-foreground font-medium mt-2">
-                info@blackeagleproject.org
+                info@defit.work
               </p>
             </section>
 
