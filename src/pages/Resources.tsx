@@ -252,41 +252,6 @@ const Resources = () => {
         </div>
       </section>
 
-      {/* Video Resources */}
-      <section className="py-16">
-        <div className="container px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold mb-4">
-              Featured <span className="text-gradient">Videos</span>
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Training tutorials and educational content from H2F experts.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              { title: "ACFT Event Breakdown", duration: "12:34" },
-              { title: "Ruck Training Fundamentals", duration: "18:22" },
-              { title: "Recovery Day Routine", duration: "24:15" },
-            ].map((video) => (
-              <div key={video.title} className="glass rounded-2xl overflow-hidden card-hover group">
-                <div className="aspect-video bg-secondary flex items-center justify-center relative">
-                  <Video className="w-12 h-12 text-muted-foreground" />
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 rounded text-xs text-foreground">
-                    {video.duration}
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">
-                    {video.title}
-                  </h4>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* External Links */}
       <section className="py-16">
         <div className="container px-4">
@@ -296,14 +261,16 @@ const Resources = () => {
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                { name: "Army H2F Program", url: "#" },
-                { name: "ACFT Standards", url: "#" },
-                { name: "Army Wellness Center", url: "#" },
-                { name: "Military OneSource", url: "#" },
+                { name: "Army H2F Program", url: "https://h2f.army.mil/" },
+                { name: "ACFT Standards", url: "https://www.army.mil/acft/" },
+                { name: "Army Wellness Center", url: "https://phc.amedd.army.mil/topics/healthyliving/al/Pages/ArmyWellnessCenters.aspx" },
+                { name: "Military OneSource", url: "https://www.militaryonesource.mil/" },
               ].map((link) => (
                 <a
                   key={link.name}
                   href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="glass rounded-xl p-4 flex items-center justify-between hover:border-primary/50 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
