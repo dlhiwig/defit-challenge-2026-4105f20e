@@ -1,6 +1,51 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ExternalLink, FileText, Video, BookOpen, Heart, Brain, Apple, Moon } from "lucide-react";
+import { ExternalLink, FileText, Video, BookOpen, Heart, Brain, Apple, Moon, Play } from "lucide-react";
+
+const featuredVideos = [
+  {
+    title: "Holistic Health & Fitness: Optimal Readiness and Lethality",
+    url: "https://www.youtube.com/watch?v=fRM-fPeVs0k",
+    thumbnail: "https://img.youtube.com/vi/fRM-fPeVs0k/hqdefault.jpg",
+    source: "Defense Visual Information",
+    duration: "5:32",
+  },
+  {
+    title: "ALL YOU — Army H2F Wellness Series",
+    url: "https://www.youtube.com/watch?v=BzZ3NWTs4Mo",
+    thumbnail: "https://img.youtube.com/vi/BzZ3NWTs4Mo/hqdefault.jpg",
+    source: "GoArmy",
+    duration: "0:31",
+  },
+  {
+    title: "Army Combat Fitness Test (ACFT) Demonstration",
+    url: "https://www.youtube.com/watch?v=WHpkSBc04aA",
+    thumbnail: "https://img.youtube.com/vi/WHpkSBc04aA/hqdefault.jpg",
+    source: "U.S. Department of Defense",
+    duration: "3:36",
+  },
+  {
+    title: "Leaders Discuss the H2F System",
+    url: "https://www.youtube.com/watch?v=nqu05z72LWo",
+    thumbnail: "https://img.youtube.com/vi/nqu05z72LWo/hqdefault.jpg",
+    source: "US Army Physical Fitness School",
+    duration: "2:10",
+  },
+  {
+    title: "ACFT Sprint-Drag-Carry Training",
+    url: "https://www.youtube.com/watch?v=PJc1xkiYL7c",
+    thumbnail: "https://img.youtube.com/vi/PJc1xkiYL7c/hqdefault.jpg",
+    source: "US Army Physical Fitness School",
+    duration: "6:48",
+  },
+  {
+    title: "ACFT Event Breakdown & Standards",
+    url: "https://www.youtube.com/watch?v=RnVTW1Lh7zk",
+    thumbnail: "https://img.youtube.com/vi/RnVTW1Lh7zk/hqdefault.jpg",
+    source: "U.S. Department of Defense",
+    duration: "2:16",
+  },
+];
 
 const resourceCategories = [
   {
@@ -118,6 +163,67 @@ const Resources = () => {
                 </ul>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Videos */}
+      <section className="py-16">
+        <div className="container px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Video className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold">
+                Featured <span className="text-gradient">Videos</span>
+              </h2>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredVideos.map((video) => (
+                <a
+                  key={video.title}
+                  href={video.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass rounded-2xl overflow-hidden card-hover group block"
+                >
+                  <div className="relative aspect-video bg-secondary">
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center">
+                        <Play className="w-6 h-6 text-primary-foreground ml-0.5" />
+                      </div>
+                    </div>
+                    <span className="absolute bottom-2 right-2 text-xs bg-black/70 text-white px-2 py-0.5 rounded">
+                      {video.duration}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground text-sm leading-tight mb-1 group-hover:text-primary transition-colors">
+                      {video.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">{video.source}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <a
+                href="https://www.youtube.com/@USArmyPhysicalFitnessSchool"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                View more on the US Army Physical Fitness School channel
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
