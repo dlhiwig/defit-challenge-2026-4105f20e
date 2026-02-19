@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, LogIn, UserPlus } from 'lucide-react';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
+import OAuthButtons from '@/components/OAuthButtons';
 import defitLogo from '@/assets/defit-logo.png';
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -118,6 +119,17 @@ export default function Auth() {
               <p className="text-muted-foreground text-sm text-center mt-2">
                 Double Eagle Fitness – Army Reserve
               </p>
+            </div>
+
+            <OAuthButtons />
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+              </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
