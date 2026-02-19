@@ -45,7 +45,7 @@ interface RankResult {
 
 // ─── UTILITIES ───
 
-/** Assign competition ranks (ties get same rank, next rank skips). higherIsBetter=true means highest value gets rank 1. */
+/** Assign competition ranks (ties get same rank, next rank skips). */
 function assignRanks(items: { id: string; val: number }[], lowerBetter = false): Map<string, number> {
   const sorted = [...items].sort((a, b) => lowerBetter ? a.val - b.val : b.val - a.val)
   const m = new Map<string, number>()
@@ -167,7 +167,6 @@ function computeComponentE(entities: EntityMetrics[], scoringWeeks: number): Map
     const wC = assignRanks(entities.map(e => ({ id: e.id, val: e.weeklyHiit[w] || 0 })))
     const wD = assignRanks(entities.map(e => ({ id: e.id, val: e.weeklyTmarm[w] || 0 })))
 
-    // Weekly overall = sum of component ranks (lower is better)
     const weeklyScores = entities.map(e => ({
       id: e.id,
       val: (wA.get(e.id) || 0) + (wB.get(e.id) || 0) + (wC.get(e.id) || 0) + (wD.get(e.id) || 0),
@@ -268,17 +267,21 @@ Deno.serve(async (req) => {
 
   try {
     // Parse params from URL (GET) or body (POST)
-    let level = 'individual', limit = 50
+    let level = 'individual', limit = 50, search = '', findMe = ''
     if (req.method === 'POST') {
       try {
         const body = await req.json()
         level = body.level || level
         limit = body.limit || limit
+        search = (body.search || '').trim()
+        findMe = (body.findMe || '').trim()
       } catch { /* use defaults */ }
     } else {
       const url = new URL(req.url)
       level = url.searchParams.get('level') || level
       limit = parseInt(url.searchParams.get('limit') || '50')
+      search = (url.searchParams.get('search') || '').trim()
+      findMe = (url.searchParams.get('findMe') || '').trim()
     }
 
     if (!['individual', 'team', 'unit', 'command'].includes(level)) {
@@ -336,7 +339,6 @@ Deno.serve(async (req) => {
     }
 
     else if (level === 'team') {
-      // Compute individual scores for pool selection
       const indivResults = computeRankings(Array.from(userMetrics.values()), 'individual', scoringWeeks)
       const indivScores = new Map<string, number>()
       indivResults.forEach(r => indivScores.set(r.entityId, r.totalScore))
@@ -442,11 +444,33 @@ Deno.serve(async (req) => {
       results = computeRankings(cmdEntities, 'command', scoringWeeks, fValues)
     }
 
-    const limited = results.slice(0, limit)
+    const totalRanked = results.length
+
+    // ─── FIND ME ───
+    // findMe is a user_id — resolve BEFORE search filtering so we always find them
+    let foundMe: RankResult | null = null
+    if (findMe) {
+      foundMe = results.find(r => r.entityId === findMe) || null
+    }
+
+    // ─── SEARCH FILTER ───
+    // Search filters the FULL ranked results by name (case-insensitive, partial match)
+    // Global ranks are preserved from the full computation
+    let searchApplied = false
+    if (search) {
+      searchApplied = true
+      const q = search.toLowerCase()
+      results = results.filter(r => r.entityName.toLowerCase().includes(q))
+    }
+
+    // Apply limit only when not searching (search returns all matches)
+    const outputData = searchApplied ? results : results.slice(0, limit)
 
     return new Response(JSON.stringify({
-      level, data: limited, total: results.length,
+      level, data: outputData, total: totalRanked,
+      searchTotal: searchApplied ? results.length : undefined,
       challengeStart: challengeStart.toISOString(), scoringWeeks,
+      foundMe,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
     })
