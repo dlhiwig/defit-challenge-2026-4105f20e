@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/defit-challenge-2026/' : '/',
+  base: '/',  // Using Vercel now, not GitHub Pages
   server: {
     host: "::",
     port: 8080,
