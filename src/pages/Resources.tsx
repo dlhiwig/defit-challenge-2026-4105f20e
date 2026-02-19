@@ -7,7 +7,7 @@ const resourceCategories = [
     title: "Training Resources",
     icon: FileText,
     resources: [
-      { name: "FM 7-22 Holistic Health and Fitness", url: "#", type: "PDF" },
+      { name: "FM 7-22 Holistic Health and Fitness", url: "https://h2f.army.mil/H2F-Academy/", type: "PDF" },
       { name: "ACFT Training Guide", url: "#", type: "PDF" },
       { name: "Ruck March Preparation", url: "#", type: "Article" },
       { name: "Progressive Overload Fundamentals", url: "#", type: "Video" },
