@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/integrations/supabase/client';
+
+// API base URL - points to the DEFIT App which has the Neon database connection
+const API_BASE = 'https://defit.work';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -108,15 +110,43 @@ export default function LeaderboardUnits() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('get-unit-leaderboard');
+      const res = await fetch(`${API_BASE}/api/rankings?level=unit&limit=100`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
       
-      if (error) throw error;
+      const response = await res.json();
+      if (!response.success) throw new Error(response.error || 'Failed to fetch leaderboard');
       
-      const response = data as LeaderboardResponse;
-      setLeaderboard(response.data || []);
-      setTotalUnits(response.totalUnits || 0);
-      setChallengeRound(response.challengeRound || '');
-      setSnapshotDate(response.snapshotDate || '');
+      // Transform App API response to expected format
+      const transformed: UnitEntry[] = (response.data || []).map((entry: any) => ({
+        rank: entry.overall_rank,
+        unitName: entry.name || entry.unit_id,
+        unitCategory: 'military', // Default category
+        unitCategoryLabel: 'Military',
+        memberCount: entry.member_count || 0,
+        totalCardioMiles: 0,
+        totalStrengthLbs: 0,
+        totalHiitMinutes: 0,
+        totalTmarmMinutes: 0,
+        avgCardioMiles: 0,
+        avgStrengthLbs: 0,
+        avgHiitMinutes: 0,
+        avgTmarmMinutes: 0,
+        cardioCompletion: 0,
+        strengthCompletion: 0,
+        hiitCompletion: 0,
+        tmarmCompletion: 0,
+        overallCompletion: 100 - entry.total_score, // Lower score is better in OML
+        members: (entry.scoring_pool || []).map((m: any) => ({
+          userId: String(m.participantId),
+          name: m.name,
+          overallCompletion: 0,
+        })),
+      }));
+      
+      setLeaderboard(transformed);
+      setTotalUnits(transformed.length);
+      setChallengeRound('DEFIT 8');
+      setSnapshotDate(new Date().toLocaleDateString());
     } catch (err: any) {
       console.error('Error fetching unit leaderboard:', err);
       setError(err.message || 'Failed to load leaderboard');

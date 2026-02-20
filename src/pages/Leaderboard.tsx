@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/integrations/supabase/client';
+
+// API base URL - points to the DEFIT App which has the Neon database connection
+const API_BASE = 'https://defit.work';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -106,13 +108,31 @@ export default function Leaderboard() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('get-leaderboard');
+      const res = await fetch(`${API_BASE}/api/leaderboard?limit=100`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
       
-      if (error) throw error;
+      const response = await res.json();
+      if (!response.success) throw new Error(response.error || 'Failed to fetch leaderboard');
       
-      const response = data as LeaderboardResponse;
-      setLeaderboard(response.data || []);
-      setTotalParticipants(response.totalParticipants || 0);
+      // Transform App API response to expected format
+      const transformed: LeaderboardEntry[] = (response.data || []).map((entry: any, index: number) => ({
+        rank: index + 1,
+        userId: String(entry.id),
+        name: `${entry.first_name} ${entry.last_name}`,
+        unit: entry.team || null,
+        cardioMiles: 0, // Not in this API response
+        strengthLbs: 0,
+        hiitMinutes: 0,
+        tmarmMinutes: 0,
+        cardioCompletion: 0,
+        strengthCompletion: 0,
+        hiitCompletion: 0,
+        tmarmCompletion: 0,
+        overallCompletion: parseFloat(entry.total_points) || 0,
+      }));
+      
+      setLeaderboard(transformed);
+      setTotalParticipants(transformed.length);
     } catch (err: any) {
       console.error('Error fetching leaderboard:', err);
       setError(err.message || 'Failed to load leaderboard');
