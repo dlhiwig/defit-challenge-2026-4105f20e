@@ -2,8 +2,83 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+
+// API base URL - points to the DEFIT App which has the Neon database connection
+const API_BASE = 'https://defit.work';
+
+// Transform App API response to website's expected format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformApiResponse(entry: any, level: string): RankEntry {
+  // Individual level
+  if (level === 'individual') {
+    return {
+      entityId: String(entry.participant_id),
+      entityName: `${entry.first_name} ${entry.last_name}`,
+      finalRank: entry.overall_rank,
+      totalScore: entry.total_score,
+      componentA: entry.rank_a,
+      componentB: entry.rank_b,
+      componentC: entry.rank_c,
+      componentD: entry.rank_d,
+      componentE: entry.rank_e,
+      componentF: null,
+      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
+      metadata: { unit: entry.command },
+    };
+  }
+  
+  // Team level
+  if (level === 'team') {
+    return {
+      entityId: entry.team_id,
+      entityName: entry.name,
+      finalRank: entry.overall_rank,
+      totalScore: entry.total_score,
+      componentA: entry.rank_a,
+      componentB: entry.rank_b,
+      componentC: entry.rank_c,
+      componentD: entry.rank_d,
+      componentE: entry.rank_e,
+      componentF: entry.rank_f,
+      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
+      metadata: { memberCount: entry.member_count },
+    };
+  }
+  
+  // Unit level
+  if (level === 'unit') {
+    return {
+      entityId: entry.uic || entry.unit_id,
+      entityName: entry.name || entry.uic,
+      finalRank: entry.overall_rank,
+      totalScore: entry.total_score,
+      componentA: entry.rank_a,
+      componentB: entry.rank_b,
+      componentC: entry.rank_c,
+      componentD: entry.rank_d,
+      componentE: entry.rank_e,
+      componentF: entry.rank_f,
+      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
+      metadata: { memberCount: entry.member_count },
+    };
+  }
+  
+  // Command level
+  return {
+    entityId: entry.command_id || entry.name,
+    entityName: entry.name,
+    finalRank: entry.overall_rank,
+    totalScore: entry.total_score,
+    componentA: entry.rank_a,
+    componentB: entry.rank_b,
+    componentC: entry.rank_c,
+    componentD: entry.rank_d,
+    componentE: entry.rank_e,
+    componentF: entry.rank_f,
+    rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
+    metadata: { memberCount: entry.member_count },
+  };
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +100,6 @@ function RankIcon({ rank }: { rank: number }) {
 }
 
 export default function Rankings() {
-  const { user } = useAuth();
   const [level, setLevel] = useState<RankingLevel>('individual');
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
@@ -48,17 +122,24 @@ export default function Rankings() {
     setLoading(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = { level, limit: 100 };
-      if (search) body.search = search;
-      if (findMe) body.findMe = findMe;
+      // Build query params for the App's API
+      const params = new URLSearchParams({ level, limit: '100' });
+      if (search) params.set('search', search);
+      if (findMe) params.set('id', findMe);
 
-      const { data: res, error: err } = await supabase.functions.invoke('get-rankings', { body });
-      if (err) throw err;
-      const response = res as RankingsResponse & { searchTotal?: number; foundMe?: RankEntry | null };
-      setData(response.data || []);
-      setTotal(response.total || 0);
-      setSearchTotal(response.searchTotal);
-      if (response.foundMe) setFoundMe(response.foundMe);
+      const res = await fetch(`${API_BASE}/api/rankings?${params}`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      
+      const response = await res.json();
+      if (!response.success) throw new Error(response.error || 'Failed to fetch rankings');
+      
+      // Transform API response to website format
+      const transformed = (response.data || []).map((e: unknown) => transformApiResponse(e, level));
+      setData(transformed);
+      setTotal(response.totalParticipants || response.count || 0);
+      setSearchTotal(search ? response.count : undefined);
+      // findMe handling - if searching by ID, the result is in data
+      if (findMe && transformed.length > 0) setFoundMe(transformed[0]);
     } catch (err: any) {
       console.error('Rankings error:', err);
       setError(err.message || 'Failed to load rankings');
@@ -98,18 +179,10 @@ export default function Rankings() {
     fetchRankings();
   };
 
+  // Note: "Find My Ranking" requires auth - use the DEFIT App (defit.work) for this feature
   const handleFindMe = async () => {
-    if (!user) return;
-    setFindingMe(true);
-    setFoundMe(null);
-    setSearchQuery('');
-    setSearchTotal(undefined);
-    await fetchRankings(undefined, user.id);
-    // Scroll to highlighted row after render
-    setTimeout(() => {
-      highlightedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      highlightedMobileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 200);
+    // Redirect to app for authenticated features
+    window.location.href = 'https://defit.work/dashboard/leaderboard';
   };
 
   const hasF = level !== 'individual';
@@ -181,18 +254,13 @@ export default function Rankings() {
                   </button>
                 )}
               </div>
-              {user && level === 'individual' && (
+              {level === 'individual' && (
                 <Button
                   variant="outline"
                   onClick={handleFindMe}
-                  disabled={findingMe}
                   className="shrink-0"
                 >
-                  {findingMe ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <UserCheck className="w-4 h-4 mr-2" />
-                  )}
+                  <UserCheck className="w-4 h-4 mr-2" />
                   Find My Ranking
                 </Button>
               )}
