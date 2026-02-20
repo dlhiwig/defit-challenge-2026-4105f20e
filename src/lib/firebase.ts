@@ -8,13 +8,15 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 
-// Same Firebase project as DEFIT App
+// Shared Firebase project: defit-2026 (controlled by Daniel)
 const firebaseConfig = {
-  projectId: "studio-3541826900-e65c5",
-  appId: "1:831310688334:web:0486a3d1d7d76e00d8131f",
-  apiKey: "AIzaSyCue0HweVo_KWC0nW1yqNHxt0oc_A4REXk",
-  authDomain: "studio-3541826900-e65c5.firebaseapp.com",
-  messagingSenderId: "831310688334",
+  projectId: "defit-2026",
+  appId: "1:772961957739:web:fa6c2777fe08679a4fbe2e",
+  apiKey: "AIzaSyADP4MkJFs72rDwNP63S41MPhoIKCDUnV8",
+  authDomain: "defit-2026.firebaseapp.com",
+  storageBucket: "defit-2026.firebasestorage.app",
+  messagingSenderId: "772961957739",
+  measurementId: "G-2ECTB05RGG",
 };
 
 let app: FirebaseApp;
