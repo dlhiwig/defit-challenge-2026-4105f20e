@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/integrations/supabase/client';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -37,10 +38,15 @@ type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
+  const [isValidCode, setIsValidCode] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
+
+  // Get the oobCode from URL (Firebase password reset code)
+  const oobCode = searchParams.get('oobCode') || searchParams.get('code');
 
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -48,45 +54,50 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    // Supabase automatically exchanges the recovery token from the URL hash
-    // and creates a session. We listen for that event.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsValidSession(true);
+    // Verify the password reset code
+    const verifyCode = async () => {
+      if (!oobCode) {
+        setChecking(false);
+        return;
+      }
+
+      try {
+        const auth = getFirebaseAuth();
+        const userEmail = await verifyPasswordResetCode(auth, oobCode);
+        setEmail(userEmail);
+        setIsValidCode(true);
+      } catch (error) {
+        console.error('Invalid reset code:', error);
+        setIsValidCode(false);
+      } finally {
         setChecking(false);
       }
-    });
+    };
 
-    // Also check if there's already a session (user clicked the link and session was set)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsValidSession(true);
-      }
-      setChecking(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    verifyCode();
+  }, [oobCode]);
 
   const handleResetPassword = async (data: ResetPasswordValues) => {
-    setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: data.password });
-    setIsLoading(false);
+    if (!oobCode) return;
 
-    if (error) {
-      toast({
-        title: 'Password update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      // Sign out so user logs in fresh with new password
-      await supabase.auth.signOut();
+    setIsLoading(true);
+    try {
+      const auth = getFirebaseAuth();
+      await confirmPasswordReset(auth, oobCode, data.password);
+      
       toast({
         title: 'Password updated',
         description: 'Please sign in with your new password.',
       });
       navigate('/auth');
+    } catch (error: any) {
+      toast({
+        title: 'Password update failed',
+        description: error.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,7 +113,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (!isValidSession) {
+  if (!isValidCode) {
     return (
       <main className="min-h-screen bg-background texture-canvas">
         <Navbar />
@@ -137,6 +148,11 @@ export default function ResetPassword() {
               <h1 className="text-2xl font-heading font-bold text-foreground">
                 Create a new password
               </h1>
+              {email && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  for {email}
+                </p>
+              )}
             </div>
 
             <Form {...form}>

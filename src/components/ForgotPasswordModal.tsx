@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ interface ForgotPasswordModalProps {
 }
 
 export default function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalProps) {
+  const { resetPassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [lastRequestTime, setLastRequestTime] = useState(0);
@@ -55,10 +56,11 @@ export default function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswo
 
     setIsLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/reset-password`;
-      await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: redirectUrl,
-      });
+      const { error } = await resetPassword(data.email);
+      if (error) {
+        // Don't reveal if email exists or not for security
+        console.error('Password reset error:', error);
+      }
       setLastRequestTime(Date.now());
       setSubmitted(true);
     } catch {

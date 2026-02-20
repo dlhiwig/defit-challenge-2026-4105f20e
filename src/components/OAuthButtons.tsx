@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { lovable } from '@/integrations/lovable/index';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function OAuthButtons() {
   const { toast } = useToast();
+  const { signInWithGoogle, signInWithApple } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<'google' | 'apple' | null>(null);
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setLoading(provider);
-    const { error } = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
-    });
+    
+    const signInFn = provider === 'google' ? signInWithGoogle : signInWithApple;
+    const { error } = await signInFn();
+    
     if (error) {
       toast({
         title: 'Sign in failed',
@@ -19,6 +23,12 @@ export default function OAuthButtons() {
         variant: 'destructive',
       });
       setLoading(null);
+    } else {
+      toast({
+        title: 'Welcome!',
+        description: 'Signed in successfully.',
+      });
+      navigate('/dashboard');
     }
   };
 
