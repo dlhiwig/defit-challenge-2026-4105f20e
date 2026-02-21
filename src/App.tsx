@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Rules from "./pages/Rules";
@@ -38,33 +39,35 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/rules" element={<Rules />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/history" element={<WorkoutHistory />} />
-            <Route path="/profile/settings" element={<ProfileSettings />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin/verify-logs" element={<AdminVerifyLogs />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/report-issue" element={<ReportIssue />} />
-            <Route path="/contact" element={<ContactPOC />} />
-            <Route path="/security" element={<SecurityCompliance />} />
-            <Route path="/missions" element={<Missions />} />
-            <Route path="/missions/:slug" element={<MissionDetail />} />
-            <Route path="/rankings" element={<Rankings />} />
-            <Route path="/scoring" element={<Scoring />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/rules" element={<Rules />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/history" element={<WorkoutHistory />} />
+              <Route path="/profile/settings" element={<ProfileSettings />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin/verify-logs" element={<AdminVerifyLogs />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/report-issue" element={<ReportIssue />} />
+              <Route path="/contact" element={<ContactPOC />} />
+              <Route path="/security" element={<SecurityCompliance />} />
+              <Route path="/missions" element={<Missions />} />
+              <Route path="/missions/:slug" element={<MissionDetail />} />
+              <Route path="/rankings" element={<Rankings />} />
+              <Route path="/scoring" element={<Scoring />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

@@ -126,7 +126,6 @@ export default function AdminVerifyLogs() {
         .maybeSingle();
 
       if (error || !data) {
-        console.log('User is not admin');
         setIsAdmin(false);
         setLoading(false);
         return;
