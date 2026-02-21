@@ -5,7 +5,7 @@ const footerLinks = {
   Challenge: [
     { label: "About DEFIT", href: "/about" },
     { label: "Rules & Scoring", href: "/rules" },
-    { label: "Leaderboard", href: "/#leaderboard" },
+    { label: "Leaderboard", href: "/leaderboard" },
   ],
   Resources: [
     { label: "H2F Resources", href: "/resources" },
@@ -21,22 +21,23 @@ const footerLinks = {
 
 const socialLinks = [
   { icon: Mail, href: "mailto:info@defit.work", label: "Email" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Youtube, href: "#", label: "YouTube" },
+  // TODO: Add real social media links when available
+  // { icon: Instagram, href: "#", label: "Instagram" },
+  // { icon: Facebook, href: "#", label: "Facebook" },
+  // { icon: Youtube, href: "#", label: "YouTube" },
 ];
 
 const Footer = () => {
   return (
     <footer className="py-16 border-t-2 border-primary">
       <div className="container px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 flex flex-col items-center">
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
                 alt="DEFIT Challenge"
-                className="w-48 h-48 object-contain"
+                className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 object-contain"
                 src={`${import.meta.env.BASE_URL}lovable-uploads/cc2d9315-be04-4d2c-a390-e524797420ec.png`}
               />
             </Link>
