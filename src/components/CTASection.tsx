@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import kettlebellBadge from "@/assets/kettlebell-badge.png";
 const CTASection = () => {
   return <section className="py-24 relative overflow-hidden">
@@ -25,9 +26,11 @@ const CTASection = () => {
           </p>
 
           {/* CTA */}
-          <Button variant="hero" size="lg">
-            Enlist Now
-            <ArrowRight className="w-5 h-5" />
+          <Button variant="hero" size="lg" asChild>
+            <Link to="/auth">
+              Enlist Now
+              <ArrowRight className="w-5 h-5" />
+            </Link>
           </Button>
 
           {/* Trust Indicators */}

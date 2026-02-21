@@ -43,9 +43,11 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="hero" size="lg" className="w-full sm:w-auto font-heading">
-              Register Now
-              <ArrowRight className="w-5 h-5" />
+            <Button variant="hero" size="lg" className="w-full sm:w-auto font-heading" asChild>
+              <Link to="/auth">
+                Register Now
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </Button>
             <Button variant="glass" size="lg" className="w-full sm:w-auto font-heading" asChild>
               <Link to="/about">
