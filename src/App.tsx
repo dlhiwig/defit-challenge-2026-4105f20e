@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Rules from "./pages/Rules";
@@ -47,12 +48,12 @@ const App = () => (
               <Route path="/resources" element={<Resources />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/history" element={<WorkoutHistory />} />
-              <Route path="/profile/settings" element={<ProfileSettings />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/history" element={<ProtectedRoute><WorkoutHistory /></ProtectedRoute>} />
+              <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/admin/verify-logs" element={<AdminVerifyLogs />} />
-              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/faq" element={<FAQ />} />
