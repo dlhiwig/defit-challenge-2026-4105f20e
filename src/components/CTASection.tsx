@@ -27,17 +27,17 @@ const CTASection = () => {
 
           {/* CTA */}
           <Button variant="hero" size="lg" asChild>
-            <Link to="/auth">
+            <Link to="/register">
               Enlist Now
               <ArrowRight className="w-5 h-5" />
             </Link>
           </Button>
 
           {/* Trust Indicators */}
-          <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground uppercase tracking-wide">
-            <span>✓ No credit card required</span>
-            <span>✓ Cancel anytime</span>
-            <span>✓ 7-day trial</span>
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-muted-foreground uppercase tracking-wide">
+            <span>✓ Free to participate</span>
+            <span>✓ Open to all Army Reserve Soldiers</span>
+            <span>✓ 11 Jan – 21 Mar 2027</span>
           </div>
         </div>
       </div>
