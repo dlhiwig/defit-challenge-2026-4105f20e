@@ -162,9 +162,8 @@ export default function Leaderboard() {
   const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
   const firstPageReset = useRef(true);
 
-  const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean } = {}) => {
-    if (opts.background) setRefreshing(true);
-    else if (opts.isRefresh) setRefreshing(true);
+  const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean; auto?: boolean } = {}) => {
+    if (opts.background || opts.isRefresh || opts.auto) setRefreshing(true);
     else setLoading(true);
     if (!opts.background) setError(null);
     try {
@@ -173,11 +172,18 @@ export default function Leaderboard() {
       if (data?.error) throw new Error(data.error);
 
       const payload = normalize(data);
-      setLeaderboard(payload.entries);
+      setLeaderboard((prev) => {
+        if (opts.isRefresh || opts.background || opts.auto) {
+          const changed = JSON.stringify(prev) !== JSON.stringify(payload.entries);
+          setChangedAt(changed ? Date.now() : null);
+        }
+        return payload.entries;
+      });
       setMinimums(payload.minimums);
       writeCache<CachedPayload>(CACHE_KEY, payload);
       setCachedAt(Date.now());
       setServingStale(false);
+      if (opts.auto) setLastAutoAt(Date.now());
       setError(null);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
@@ -294,10 +300,58 @@ export default function Leaderboard() {
   const pageStart = (currentPage - 1) * pageSize;
   const pageEntries = processed.slice(pageStart, pageStart + pageSize);
 
-  // Reset to first page whenever the view changes
+  // Reset to first page whenever the view changes (but keep a shared link's page)
   useEffect(() => {
+    if (firstPageReset.current) {
+      firstPageReset.current = false;
+      return;
+    }
     setPage(1);
   }, [query, sortMetric, sortDirection, pageSize]);
+
+  // Keep the URL in sync so the current view is shareable.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (sortMetric !== 'overall') params.set('sort', sortMetric);
+    if (sortDirection !== 'desc') params.set('dir', sortDirection);
+    if (query.trim()) params.set('q', query.trim());
+    if (page > 1) params.set('page', String(page));
+    if (pageSize !== 25) params.set('size', String(pageSize));
+    if (autoRefresh !== '0') params.set('auto', autoRefresh);
+    setSearchParams(params, { replace: true });
+  }, [sortMetric, sortDirection, query, page, pageSize, autoRefresh, setSearchParams]);
+
+  // Optional auto-refresh on a fixed interval, with a visible countdown.
+  const intervalMs = AUTO_REFRESH_OPTIONS.find(o => o.value === autoRefresh)?.ms ?? 0;
+  useEffect(() => {
+    if (!intervalMs) {
+      setNextRefreshIn(null);
+      return;
+    }
+    let remaining = Math.round(intervalMs / 1000);
+    setNextRefreshIn(remaining);
+    const tick = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) remaining = Math.round(intervalMs / 1000);
+      setNextRefreshIn(remaining);
+    }, 1000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'hidden') fetchLeaderboard({ auto: true });
+    }, intervalMs);
+    return () => {
+      clearInterval(tick);
+      clearInterval(timer);
+    };
+  }, [intervalMs, fetchLeaderboard]);
+
+  const handleShareLink = async () => {
+    const url = await copyCurrentViewLink();
+    toast(
+      url
+        ? { title: 'Link copied', description: 'This exact leaderboard view — search, sort, page size, and page — is on your clipboard.' }
+        : { title: 'Could not copy link', description: 'Copy the address bar URL manually to share this view.', variant: 'destructive' }
+    );
+  };
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
