@@ -576,6 +576,14 @@ export default function Leaderboard() {
         </div>
       </section>
 
+      {/* Top Movers since the previous cached standings */}
+      <TopMoversPanel
+        movers={movers}
+        onSelect={(userId, name, unit) => setProfileFor({ userId, name, unit })}
+      />
+
+
+
       {/* Disclaimer */}
       <section className="pb-6">
         <div className="container px-4">
