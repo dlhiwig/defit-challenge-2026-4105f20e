@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
 
   try {
     // Parse params from URL (GET) or body (POST)
-    let level = 'individual', limit = 50, search = '', findMe = ''
+    let level = 'individual', limit = 50, search = '', findMe = '', dataset = 'cycle'
     if (req.method === 'POST') {
       try {
         const body = await req.json()
@@ -275,6 +275,7 @@ Deno.serve(async (req) => {
         limit = body.limit || limit
         search = (body.search || '').trim()
         findMe = (body.findMe || '').trim()
+        dataset = body.dataset || dataset
       } catch { /* use defaults */ }
     } else {
       const url = new URL(req.url)
@@ -282,6 +283,7 @@ Deno.serve(async (req) => {
       limit = parseInt(url.searchParams.get('limit') || '50')
       search = (url.searchParams.get('search') || '').trim()
       findMe = (url.searchParams.get('findMe') || '').trim()
+      dataset = url.searchParams.get('dataset') || dataset
     }
 
     if (!['individual', 'team', 'unit', 'command'].includes(level)) {
@@ -289,6 +291,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    if (!['cycle', 'sample'].includes(dataset)) dataset = 'cycle'
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
@@ -296,8 +299,9 @@ Deno.serve(async (req) => {
     const { data: configRows } = await supabase.from('challenge_config').select('key, value')
     const cfg: Record<string, string> = {}
     configRows?.forEach(r => { cfg[r.key] = r.value })
-    const challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
-    const scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
+    let challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
+    let scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
+
 
     // Fetch all data in parallel
     const [profilesRes, cardioRes, strengthRes, hiitRes, tmarmRes, teamsRes, membersRes, commandsRes] = await Promise.all([
