@@ -18,9 +18,25 @@ import {
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
   RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
+  CalendarDays, FlaskConical,
 } from 'lucide-react';
 import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
+import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import {
+  CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
+  CHALLENGE_WEEKS, cycleStatus,
+} from '@/lib/challenge';
+
+type Dataset = 'cycle' | 'sample';
+
+interface RankingsPayload {
+  data: RankEntry[];
+  total: number;
+  datasetStart?: string | null;
+  datasetEnd?: string | null;
+}
+
 
 type SortKey = 'rank' | 'score' | 'name' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 type SortDirection = 'asc' | 'desc';
@@ -63,11 +79,15 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
 export default function Rankings() {
   const { user } = useAuth();
   const [level, setLevel] = useState<RankingLevel>('individual');
+  const [dataset, setDataset] = useState<Dataset>('cycle');
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
+  const [windowRange, setWindowRange] = useState<{ start?: string | null; end?: string | null }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [servingStale, setServingStale] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,15 +107,25 @@ export default function Rankings() {
   const highlightedRef = useRef<HTMLTableRowElement | null>(null);
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
+  const cacheKey = `rankings:v1:${dataset}:${level}`;
+
+  const applyPayload = useCallback((payload: RankingsPayload) => {
+    setData(payload.data);
+    setTotal(payload.total);
+    setWindowRange({ start: payload.datasetStart, end: payload.datasetEnd });
+  }, []);
+
   const fetchRankings = useCallback(
-    async (opts: { search?: string; findMe?: string; refresh?: boolean } = {}) => {
-      if (opts.refresh) setRefreshing(true);
+    async (opts: { search?: string; findMe?: string; refresh?: boolean; background?: boolean } = {}) => {
+      if (opts.refresh || opts.background) setRefreshing(true);
       else setLoading(true);
-      setError(null);
+      if (!opts.background) setError(null);
+      const isPlain = !opts.search && !opts.findMe;
       try {
         const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
           body: {
             level,
+            dataset,
             limit: 500,
             search: opts.search ?? '',
             findMe: opts.findMe ?? '',
@@ -104,15 +134,34 @@ export default function Rankings() {
         if (fnError) throw fnError;
         if (res?.error) throw new Error(res.error);
 
-        setData((res?.data ?? []) as RankEntry[]);
-        setTotal(res?.total ?? 0);
+        const payload: RankingsPayload = {
+          data: (res?.data ?? []) as RankEntry[],
+          total: res?.total ?? 0,
+          datasetStart: res?.datasetStart ?? null,
+          datasetEnd: res?.datasetEnd ?? null,
+        };
+        applyPayload(payload);
         setSearchTotal(opts.search ? res?.searchTotal ?? res?.data?.length : undefined);
         if (opts.findMe) setFoundMe((res?.foundMe as RankEntry) ?? null);
+        if (isPlain) {
+          writeCache<RankingsPayload>(cacheKey, payload);
+          setCachedAt(Date.now());
+          setServingStale(false);
+        }
+        setError(null);
       } catch (err) {
         console.error('Rankings error:', err);
-        setError(
-          'The DEFIT ranking service did not respond. Scores are still recorded — this only affects the rankings view.'
-        );
+        // Resilience: prefer the last known rankings over an error wall.
+        const cached = readCache<RankingsPayload>(cacheKey, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
+        if (cached) {
+          applyPayload(cached.data);
+          setCachedAt(cached.cachedAt);
+          setServingStale(true);
+        } else {
+          setError(
+            'The DEFIT ranking service did not respond. Scores are still recorded — this only affects the rankings view.'
+          );
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -120,9 +169,10 @@ export default function Rankings() {
         setFindingMe(false);
       }
     },
-    [level]
+    [level, dataset, cacheKey, applyPayload]
   );
 
+  // Stale-while-revalidate on level/dataset change
   useEffect(() => {
     setSearchQuery('');
     setFoundMe(null);
@@ -130,8 +180,21 @@ export default function Rankings() {
     setPage(1);
     setSortKey('rank');
     setSortDirection('asc');
+    setServingStale(false);
+    setCachedAt(null);
+
+    const cached = readCache<RankingsPayload>(cacheKey);
+    if (cached && !cached.isExpired) {
+      applyPayload(cached.data);
+      setCachedAt(cached.cachedAt);
+      setLoading(false);
+      setError(null);
+      if (cached.isStale) fetchRankings({ background: true });
+      return;
+    }
     fetchRankings();
-  }, [level, fetchRankings]);
+  }, [level, dataset, cacheKey, fetchRankings, applyPayload]);
+
 
   useEffect(() => {
     setPage(1);
@@ -193,6 +256,15 @@ export default function Rankings() {
 
   const sortKeys: SortKey[] = ['rank', 'score', 'name', 'A', 'B', 'C', 'D', 'E', ...(hasF ? (['F'] as SortKey[]) : [])];
 
+  const status = cycleStatus();
+  const fmt = (d: Date | string) =>
+    new Date(typeof d === 'string' ? `${d}T00:00:00` : d).toLocaleDateString('en-US', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+  const sampleRangeLabel =
+    windowRange.start && windowRange.end ? `${fmt(windowRange.start)} – ${fmt(windowRange.end)}` : 'all logged activity';
+
+
   return (
     <main className="min-h-screen bg-background texture-canvas">
       <Navbar />
@@ -227,6 +299,52 @@ export default function Rankings() {
           </div>
         </div>
       </section>
+
+      {/* Dataset toggle */}
+      <section className="pb-6">
+        <div className="container px-4 max-w-4xl mx-auto">
+          <div className="glass rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-start gap-3">
+              {dataset === 'cycle'
+                ? <CalendarDays className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                : <FlaskConical className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />}
+              <div>
+                <p className="text-sm font-heading font-bold">
+                  {dataset === 'cycle' ? `${CHALLENGE_LABEL} scoring cycle` : 'Sample dataset (preview)'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {dataset === 'cycle'
+                    ? `Scoring window ${CHALLENGE_DATE_RANGE} · ${CHALLENGE_WEEKS} weeks`
+                    : `Every log on record, ignoring cycle dates · ${sampleRangeLabel}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex rounded-lg border border-border overflow-hidden self-start" role="group" aria-label="Dataset">
+              <button
+                type="button"
+                onClick={() => setDataset('cycle')}
+                aria-pressed={dataset === 'cycle'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  dataset === 'cycle' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                2027 Cycle
+              </button>
+              <button
+                type="button"
+                onClick={() => setDataset('sample')}
+                aria-pressed={dataset === 'sample'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  dataset === 'sample' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Sample Data
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Tabs + Table */}
       <section className="pb-16">
@@ -319,7 +437,18 @@ export default function Rankings() {
                 {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 Refresh
               </Button>
+              {cachedAt && (
+                <span
+                  className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
+                  aria-live="polite"
+                >
+                  {servingStale
+                    ? `Showing last known rankings (${formatCacheAge(cachedAt)}) — service unreachable`
+                    : `Updated ${formatCacheAge(cachedAt)}`}
+                </span>
+              )}
             </div>
+
 
             {/* Found Me Banner */}
             {foundMe && (
@@ -388,24 +517,61 @@ export default function Rankings() {
                       </div>
                     </div>
                   ) : sorted.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-heading font-bold mb-2">
-                        {isSearchActive ? 'No Participants Found' : 'No Rankings Yet'}
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {isSearchActive
-                          ? `No matches for "${searchQuery}". Try a different name.`
-                          : l.value === 'individual'
-                            ? 'No participants have logged activity during the scoring period.'
-                            : `No ${l.label.toLowerCase()}s meet the minimum requirements for ranking.`}
-                      </p>
-                      {isSearchActive && (
-                        <Button variant="outline" size="sm" className="mt-4" onClick={clearSearch}>
-                          Clear Search
-                        </Button>
+                    <div className="p-12 text-center max-w-xl mx-auto">
+                      {isSearchActive ? (
+                        <>
+                          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-heading font-bold mb-2">No Participants Found</h3>
+                          <p className="text-muted-foreground">
+                            No matches for "{searchQuery}". Try a different name.
+                          </p>
+                          <Button variant="outline" size="sm" className="mt-4" onClick={clearSearch}>
+                            Clear Search
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-heading font-bold mb-2">
+                            {status === 'upcoming' ? `${CHALLENGE_LABEL} Has Not Started Yet` : 'No Rankings Yet'}
+                          </h3>
+                          <p className="text-muted-foreground mb-4">
+                            {dataset === 'cycle' ? (
+                              <>
+                                Only activity logged between <strong className="text-foreground">{fmt(CHALLENGE_START)}</strong> and{' '}
+                                <strong className="text-foreground">{fmt(CHALLENGE_END)}</strong> counts toward{' '}
+                                {CHALLENGE_LABEL} rankings ({CHALLENGE_WEEKS} scoring weeks).{' '}
+                                {status === 'upcoming'
+                                  ? `Rankings publish after the first week of the cycle, once verified workouts start landing on ${fmt(CHALLENGE_START)}.`
+                                  : l.value === 'individual'
+                                    ? 'No participant has logged verified activity inside that window yet.'
+                                    : `No ${l.label.toLowerCase()}s meet the minimum roster and activity requirements yet.`}
+                              </>
+                            ) : (
+                              <>
+                                The sample dataset has no {l.value === 'individual' ? 'logged activity' : `${l.label.toLowerCase()}s`} to
+                                rank. Switch back to the {CHALLENGE_LABEL} cycle for live standings.
+                              </>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-3">
+                            {dataset === 'cycle' ? (
+                              <Button variant="outline" size="sm" onClick={() => setDataset('sample')}>
+                                <FlaskConical className="w-4 h-4 mr-2" />Preview sample dataset
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" onClick={() => setDataset('cycle')}>
+                                <CalendarDays className="w-4 h-4 mr-2" />Back to 2027 cycle
+                              </Button>
+                            )}
+                            <Button size="sm" asChild>
+                              <Link to="/dashboard">Log a workout</Link>
+                            </Button>
+                          </div>
+                        </>
                       )}
                     </div>
+
                   ) : (
                     <>
                       <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-2">

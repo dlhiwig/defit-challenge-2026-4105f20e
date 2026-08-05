@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
 
   try {
     // Parse params from URL (GET) or body (POST)
-    let level = 'individual', limit = 50, search = '', findMe = ''
+    let level = 'individual', limit = 50, search = '', findMe = '', dataset = 'cycle'
     if (req.method === 'POST') {
       try {
         const body = await req.json()
@@ -275,6 +275,7 @@ Deno.serve(async (req) => {
         limit = body.limit || limit
         search = (body.search || '').trim()
         findMe = (body.findMe || '').trim()
+        dataset = body.dataset || dataset
       } catch { /* use defaults */ }
     } else {
       const url = new URL(req.url)
@@ -282,6 +283,7 @@ Deno.serve(async (req) => {
       limit = parseInt(url.searchParams.get('limit') || '50')
       search = (url.searchParams.get('search') || '').trim()
       findMe = (url.searchParams.get('findMe') || '').trim()
+      dataset = url.searchParams.get('dataset') || dataset
     }
 
     if (!['individual', 'team', 'unit', 'command'].includes(level)) {
@@ -289,6 +291,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    if (!['cycle', 'sample'].includes(dataset)) dataset = 'cycle'
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
@@ -296,8 +299,9 @@ Deno.serve(async (req) => {
     const { data: configRows } = await supabase.from('challenge_config').select('key, value')
     const cfg: Record<string, string> = {}
     configRows?.forEach(r => { cfg[r.key] = r.value })
-    const challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
-    const scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
+    let challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
+    let scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
+
 
     // Fetch all data in parallel
     const [profilesRes, cardioRes, strengthRes, hiitRes, tmarmRes, teamsRes, membersRes, commandsRes] = await Promise.all([
@@ -320,6 +324,31 @@ Deno.serve(async (req) => {
       cardio: cardioRes.data || [], strength: strengthRes.data || [],
       hiit: hiitRes.data || [], tmarm: tmarmRes.data || [],
     }
+
+    // ─── SAMPLE DATASET MODE ───
+    // Preview mode: ignore the configured 2027 window and score every log on record.
+    // The window starts at the earliest log (Monday-aligned) and spans all logged weeks.
+    let datasetStart: string | null = null
+    let datasetEnd: string | null = null
+    if (dataset === 'sample') {
+      const dates = [
+        ...allLogs.cardio, ...allLogs.strength, ...allLogs.hiit, ...allLogs.tmarm,
+      ].map(l => String(l.date)).filter(Boolean).sort()
+      if (dates.length > 0) {
+        datasetStart = dates[0]
+        datasetEnd = dates[dates.length - 1]
+        const first = new Date(datasetStart + 'T00:00:00Z')
+        // Align to the Monday of that week so weekly buckets stay week-aligned
+        const dow = first.getUTCDay() // 0=Sun
+        const backToMonday = (dow + 6) % 7
+        first.setUTCDate(first.getUTCDate() - backToMonday)
+        challengeStart = first
+        const spanMs = new Date(datasetEnd + 'T00:00:00Z').getTime() - first.getTime()
+        scoringWeeks = Math.max(1, Math.ceil((spanMs + 1) / (7 * 24 * 3600 * 1000)))
+      }
+    }
+
+
 
     // Build individual metrics for all active users
     const userMetrics = new Map<string, EntityMetrics>()
@@ -467,13 +496,21 @@ Deno.serve(async (req) => {
     const outputData = searchApplied ? results : results.slice(0, limit)
 
     return new Response(JSON.stringify({
-      level, data: outputData, total: totalRanked,
+      level, dataset, data: outputData, total: totalRanked,
       searchTotal: searchApplied ? results.length : undefined,
       challengeStart: challengeStart.toISOString(), scoringWeeks,
+      datasetStart, datasetEnd,
+      generatedAt: new Date().toISOString(),
       foundMe,
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=900',
+      },
+      status: 200,
     })
+
 
   } catch (error) {
     console.error('Rankings error:', error)
