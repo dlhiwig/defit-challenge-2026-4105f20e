@@ -360,6 +360,81 @@ export default function Rankings() {
   const sampleRangeLabel =
     windowRange.start && windowRange.end ? `${fmt(windowRange.start)} – ${fmt(windowRange.end)}` : 'all logged activity';
 
+  // entityId → counterpart entry from the other dataset (compare mode)
+  const compareMap = useMemo(() => {
+    const map = new Map<string, RankEntry>();
+    (compareData ?? []).forEach(e => map.set(e.entityId, e));
+    return map;
+  }, [compareData]);
+
+  const comparedCount = useMemo(
+    () => (compareData ? sorted.filter(e => compareMap.has(e.entityId)).length : 0),
+    [compareData, compareMap, sorted]
+  );
+
+  const handleShareLink = async () => {
+    const url = await copyCurrentViewLink();
+    toast(
+      url
+        ? { title: 'Link copied', description: 'This exact rankings view — filters, sort, and page — is on your clipboard.' }
+        : { title: 'Could not copy link', description: 'Copy the address bar URL manually to share this view.', variant: 'destructive' }
+    );
+  };
+
+  const handleExportCsv = () => {
+    const componentKeys = ['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])];
+    const headers = [
+      'Rank', 'Name', 'Unit', ...componentKeys.map(c => COMPONENT_LABELS[c]), 'Total Score',
+    ];
+    if (compare) {
+      headers.push(
+        `${datasetLabel(otherDataset)} Rank`,
+        `${datasetLabel(otherDataset)} Score`,
+        'Rank Change',
+        'Score Change'
+      );
+    }
+
+    const componentsOf = (e: RankEntry) => [
+      e.componentA, e.componentB, e.componentC, e.componentD, e.componentE,
+      ...(hasF ? [e.componentF ?? ''] : []),
+    ];
+
+    const rows = sorted.map(e => {
+      const row: (string | number)[] = [
+        e.finalRank,
+        e.entityName,
+        (e.metadata?.unit as string) ?? '',
+        ...componentsOf(e),
+        e.totalScore,
+      ];
+      if (compare) {
+        const other = compareMap.get(e.entityId);
+        row.push(
+          other ? other.finalRank : '',
+          other ? other.totalScore : '',
+          other ? e.finalRank - other.finalRank : '',
+          other ? e.totalScore - other.totalScore : ''
+        );
+      }
+      return row;
+    });
+
+    const meta = [
+      [`DEFIT ${level} rankings — ${datasetLabel(dataset)}`],
+      [dataset === 'cycle' ? `Scoring window: ${CHALLENGE_DATE_RANGE}` : `Sample window: ${sampleRangeLabel}`],
+      [`Sorted by: ${SORT_LABELS[sortKey]} (${sortDirection === 'asc' ? 'best first' : 'worst first'})`],
+      [isSearchActive ? `Filter: "${searchQuery.trim()}"` : 'Filter: none'],
+      [`Rows exported: ${rows.length}`],
+      [`Exported: ${new Date().toLocaleString()}`],
+      [],
+    ];
+
+    const csv = `${buildCsv([], meta)}\r\n${buildCsv(headers, rows)}`;
+    downloadCsv(`defit-rankings-${level}-${dataset}-${csvTimestamp()}.csv`, csv);
+    toast({ title: 'Export ready', description: `${rows.length} row${rows.length === 1 ? '' : 's'} downloaded as CSV.` });
+  };
+
 
   return (
     <main className="min-h-screen bg-background texture-canvas">
