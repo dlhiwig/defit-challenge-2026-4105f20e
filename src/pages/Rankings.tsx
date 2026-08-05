@@ -1107,7 +1107,17 @@ export default function Rankings() {
         </div>
       </section>
 
+      <ParticipantProfileDrawer
+        open={!!profileFor}
+        onOpenChange={(open) => !open && setProfileFor(null)}
+        userId={profileFor?.userId ?? null}
+        fallbackName={profileFor?.name ?? ''}
+        fallbackUnit={profileFor?.unit ?? null}
+        dataset={dataset}
+      />
+
       <Footer />
+
     </main>
   );
 }
