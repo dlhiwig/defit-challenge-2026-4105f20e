@@ -38,7 +38,7 @@ const Navbar = () => {
   };
   return <nav className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 sm:h-20 md:h-24">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group" aria-label="DEFIT 2027 — Double Eagle Fitness Challenge home">
             <img
