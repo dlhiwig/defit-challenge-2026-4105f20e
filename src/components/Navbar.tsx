@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import doubleEagleLogo from "@/assets/double-eagle-logo.png";
+import defitEmblem from "@/assets/defit-kettlebell-eagle.png.asset.json";
 import NotificationBell from "@/components/NotificationBell";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img alt="DEFIT Challenge" className="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain" src={doubleEagleLogo} />
+            <img alt="DEFIT Challenge double eagle kettlebell emblem" className="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain" src={defitEmblem.url} />
             <span className="text-lg font-heading font-bold text-foreground uppercase tracking-wider hidden sm:block">
               DEFIT 2027 
             </span>
