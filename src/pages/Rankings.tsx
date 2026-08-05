@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,15 +19,18 @@ import {
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
   RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  CalendarDays, FlaskConical,
+  CalendarDays, FlaskConical, Download, Link2, Columns3, Minus,
 } from 'lucide-react';
 import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
+import { copyCurrentViewLink } from '@/lib/shareView';
 import {
   CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
   CHALLENGE_WEEKS, cycleStatus,
 } from '@/lib/challenge';
+
 
 type Dataset = 'cycle' | 'sample';
 
