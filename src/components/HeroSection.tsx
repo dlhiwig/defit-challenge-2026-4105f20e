@@ -24,7 +24,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse-glow" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              12 Jan – 22 Mar 2026
+              11 Jan – 21 Mar 2027
             </span>
           </div>
 
@@ -37,8 +37,8 @@ const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
-            The Double Eagle Fitness Challenge. A 10-week H2F program enhancing 
-            physical and spiritual readiness across the Army Reserve.
+            The DEFIT 2027 Double Eagle Fitness Challenge — a 10-week H2F program
+            building physical and spiritual readiness across the Army Reserve.
           </p>
 
           {/* CTA Buttons */}
@@ -60,7 +60,7 @@ const HeroSection = () => {
           <div className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto">
             {[
               { value: "10", label: "Week Challenge" },
-              { value: "4", label: "Event Types" },
+              { value: "4", label: "Fitness Pillars" },
               { value: "H2F", label: "Focused" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">

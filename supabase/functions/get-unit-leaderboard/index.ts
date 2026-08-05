@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         completionWeights: COMPLETION_WEIGHTS,
         minParticipation: MIN_PARTICIPATING_MEMBERS,
         totalUnits: rankedUnits.length,
-        challengeRound: 'DEFIT 2026 (12 Jan - 22 Mar)',
+        challengeRound: 'DEFIT 2027 (11 Jan - 21 Mar)',
         snapshotDate: new Date().toISOString(),
         categoryLabels: UNIT_CATEGORY_LABELS,
       }),
@@ -307,8 +307,8 @@ Deno.serve(async (req) => {
            "members": [{ "userId": "...", "name": "...", "overallCompletion": 85 }]
          }
        ],
-       "challengeRound": "DEFIT 2026 (12 Jan - 22 Mar)",
-       "snapshotDate": "2026-02-15T12:00:00Z",
+       "challengeRound": "DEFIT 2027 (11 Jan - 21 Mar)",
+       "snapshotDate": "2027-02-15T12:00:00Z",
        "totalUnits": 12
      }
 */

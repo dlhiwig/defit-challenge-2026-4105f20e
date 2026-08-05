@@ -59,7 +59,7 @@ const challenges = [
   },
 ];
 
-const MISSION_END = new Date("2026-03-22T23:59:59");
+const MISSION_END = new Date("2027-03-21T23:59:59");
 
 const ChallengesSection = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });

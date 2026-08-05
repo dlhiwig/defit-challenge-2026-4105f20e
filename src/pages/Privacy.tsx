@@ -17,9 +17,9 @@ const Privacy = () => {
           Privacy Policy
         </h1>
         <p className="text-muted-foreground mb-8">
-          <strong>Effective Date:</strong> January 26, 2026
+          <strong>Effective Date:</strong> January 11, 2027
           <br />
-          <strong>Last Updated:</strong> January 26, 2026
+          <strong>Last Updated:</strong> January 11, 2027
         </p>
 
         <div className="prose prose-invert max-w-none space-y-8">

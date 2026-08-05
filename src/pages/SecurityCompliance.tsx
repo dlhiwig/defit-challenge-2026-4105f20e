@@ -60,7 +60,7 @@ export default function SecurityCompliance() {
               DEFIT <span className="text-gradient">Security & Compliance</span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Last Updated: February 2026
+              Last Updated: January 2027
             </p>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function SecurityCompliance() {
             {/* Page Footer Note */}
             <div className="pt-8 border-t border-border">
               <p className="text-xs text-muted-foreground text-center">
-                Last Updated: February 2026
+                Last Updated: January 2027
               </p>
               <div className="flex justify-center gap-4 mt-3 text-xs">
                 <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">
