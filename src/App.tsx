@@ -30,6 +30,9 @@ import MissionDetail from "./pages/MissionDetail";
 import Rankings from "./pages/Rankings";
 import Scoring from "./pages/Scoring";
 import ResetPassword from "./pages/ResetPassword";
+import Register from "./pages/Register";
+import RegistrationConfirmed from "./pages/RegistrationConfirmed";
+import ProgressTracker from "./pages/ProgressTracker";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +53,9 @@ const App = () => (
               <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/history" element={<ProtectedRoute><WorkoutHistory /></ProtectedRoute>} />
+              <Route path="/dashboard/progress" element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/register/confirmed" element={<RegistrationConfirmed />} />
               <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
