@@ -30,6 +30,9 @@ import {
   CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
   CHALLENGE_WEEKS, cycleStatus,
 } from '@/lib/challenge';
+import SavedViewsMenu from '@/components/SavedViewsMenu';
+import ParticipantProfileDrawer from '@/components/ParticipantProfileDrawer';
+
 
 
 type Dataset = 'cycle' | 'sample';
