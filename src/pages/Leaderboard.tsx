@@ -716,6 +716,8 @@ export default function Leaderboard() {
                   Copy share link
                 </Button>
 
+                <SavedViewsMenu scope="leaderboard" basePath="/leaderboard" labels={VIEW_LABELS} />
+
                 {cachedAt && (
                   <span
                     className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -727,6 +729,63 @@ export default function Leaderboard() {
                   </span>
                 )}
               </div>
+
+              {/* Service unreachable: manual retry + last response diagnostics */}
+              {(servingStale || (diagnostics && !diagnostics.ok)) && (
+                <div
+                  className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
+                  role="status"
+                >
+                  <WifiOff className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs text-amber-200/80">
+                    The scoring service did not respond on the last attempt.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fetchLeaderboard({ isRefresh: true })}
+                    disabled={refreshing}
+                  >
+                    {refreshing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Retry now
+                  </Button>
+                  {diagnostics && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="Show last response diagnostics"
+                          >
+                            <Stethoscope className="w-3.5 h-3.5" />
+                            Diagnostics
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs bg-card border-border text-left">
+                          <p className="text-xs font-heading font-bold mb-1">Last response</p>
+                          <ul className="text-xs space-y-0.5 text-muted-foreground">
+                            <li>Endpoint: get-leaderboard</li>
+                            <li>Status: {diagnostics.ok ? 'OK (200)' : diagnostics.status ?? 'no HTTP status (network/CORS)'}</li>
+                            <li>Checked: {new Date(diagnostics.at).toLocaleTimeString()}</li>
+                            <li>Failed attempts: {diagnostics.attempts}</li>
+                            <li className="break-words">Detail: {diagnostics.message}</li>
+                            <li>
+                              Cached standings:{' '}
+                              {cachedAt ? `${formatCacheAge(cachedAt)} old` : 'none stored'}
+                            </li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              )}
+
 
               {/* Auto-refresh status */}
               {intervalMs > 0 && (
