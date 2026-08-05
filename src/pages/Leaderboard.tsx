@@ -44,6 +44,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { CHALLENGE_MINIMUMS } from '@/types/workout';
+import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
 
 type SortMetric = 'overall' | 'cardio' | 'strength' | 'hiit' | 'tmarm' | 'name';
 type SortDirection = 'desc' | 'asc';
@@ -463,7 +464,7 @@ export default function Leaderboard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fetchLeaderboard(true)}
+                  onClick={() => fetchLeaderboard({ isRefresh: true })}
                   disabled={loading || refreshing}
                 >
                   {refreshing ? (
@@ -509,7 +510,7 @@ export default function Leaderboard() {
                   </h3>
                   <p className="text-muted-foreground max-w-md mx-auto mb-6">{error}</p>
                   <div className="flex flex-wrap items-center justify-center gap-3">
-                    <Button onClick={() => fetchLeaderboard(true)} disabled={refreshing}>
+                    <Button onClick={() => fetchLeaderboard({ isRefresh: true })} disabled={refreshing}>
                       {refreshing ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
