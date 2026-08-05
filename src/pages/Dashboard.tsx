@@ -85,6 +85,12 @@ function DashboardContent() {
                   History
                 </Link>
               </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/dashboard/progress">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Progress Tracker
+                </Link>
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
