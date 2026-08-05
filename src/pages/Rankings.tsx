@@ -256,6 +256,15 @@ export default function Rankings() {
 
   const sortKeys: SortKey[] = ['rank', 'score', 'name', 'A', 'B', 'C', 'D', 'E', ...(hasF ? (['F'] as SortKey[]) : [])];
 
+  const status = cycleStatus();
+  const fmt = (d: Date | string) =>
+    new Date(typeof d === 'string' ? `${d}T00:00:00` : d).toLocaleDateString('en-US', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+  const sampleRangeLabel =
+    windowRange.start && windowRange.end ? `${fmt(windowRange.start)} – ${fmt(windowRange.end)}` : 'all logged activity';
+
+
   return (
     <main className="min-h-screen bg-background texture-canvas">
       <Navbar />
