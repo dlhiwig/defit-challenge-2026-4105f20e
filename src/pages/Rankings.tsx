@@ -517,24 +517,61 @@ export default function Rankings() {
                       </div>
                     </div>
                   ) : sorted.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-heading font-bold mb-2">
-                        {isSearchActive ? 'No Participants Found' : 'No Rankings Yet'}
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {isSearchActive
-                          ? `No matches for "${searchQuery}". Try a different name.`
-                          : l.value === 'individual'
-                            ? 'No participants have logged activity during the scoring period.'
-                            : `No ${l.label.toLowerCase()}s meet the minimum requirements for ranking.`}
-                      </p>
-                      {isSearchActive && (
-                        <Button variant="outline" size="sm" className="mt-4" onClick={clearSearch}>
-                          Clear Search
-                        </Button>
+                    <div className="p-12 text-center max-w-xl mx-auto">
+                      {isSearchActive ? (
+                        <>
+                          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-heading font-bold mb-2">No Participants Found</h3>
+                          <p className="text-muted-foreground">
+                            No matches for "{searchQuery}". Try a different name.
+                          </p>
+                          <Button variant="outline" size="sm" className="mt-4" onClick={clearSearch}>
+                            Clear Search
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-heading font-bold mb-2">
+                            {status === 'upcoming' ? `${CHALLENGE_LABEL} Has Not Started Yet` : 'No Rankings Yet'}
+                          </h3>
+                          <p className="text-muted-foreground mb-4">
+                            {dataset === 'cycle' ? (
+                              <>
+                                Only activity logged between <strong className="text-foreground">{fmt(CHALLENGE_START)}</strong> and{' '}
+                                <strong className="text-foreground">{fmt(CHALLENGE_END)}</strong> counts toward{' '}
+                                {CHALLENGE_LABEL} rankings ({CHALLENGE_WEEKS} scoring weeks).{' '}
+                                {status === 'upcoming'
+                                  ? `Rankings publish after the first week of the cycle, once verified workouts start landing on ${fmt(CHALLENGE_START)}.`
+                                  : l.value === 'individual'
+                                    ? 'No participant has logged verified activity inside that window yet.'
+                                    : `No ${l.label.toLowerCase()}s meet the minimum roster and activity requirements yet.`}
+                              </>
+                            ) : (
+                              <>
+                                The sample dataset has no {l.value === 'individual' ? 'logged activity' : `${l.label.toLowerCase()}s`} to
+                                rank. Switch back to the {CHALLENGE_LABEL} cycle for live standings.
+                              </>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-3">
+                            {dataset === 'cycle' ? (
+                              <Button variant="outline" size="sm" onClick={() => setDataset('sample')}>
+                                <FlaskConical className="w-4 h-4 mr-2" />Preview sample dataset
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" onClick={() => setDataset('cycle')}>
+                                <CalendarDays className="w-4 h-4 mr-2" />Back to 2027 cycle
+                              </Button>
+                            )}
+                            <Button size="sm" asChild>
+                              <Link to="/dashboard">Log a workout</Link>
+                            </Button>
+                          </div>
+                        </>
                       )}
                     </div>
+
                   ) : (
                     <>
                       <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
