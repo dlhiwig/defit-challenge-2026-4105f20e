@@ -1151,7 +1151,17 @@ export default function Leaderboard() {
         </div>
       </section>
 
+      <ParticipantProfileDrawer
+        open={!!profileFor}
+        onOpenChange={(open) => !open && setProfileFor(null)}
+        userId={profileFor?.userId ?? null}
+        name={profileFor?.name ?? ''}
+        unit={profileFor?.unit ?? null}
+        dataset="cycle"
+      />
+
       <Footer />
+
     </main>
   );
 }
