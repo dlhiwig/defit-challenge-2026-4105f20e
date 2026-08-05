@@ -82,8 +82,27 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
 
 export default function Rankings() {
   const { user } = useAuth();
-  const [level, setLevel] = useState<RankingLevel>('individual');
-  const [dataset, setDataset] = useState<Dataset>('cycle');
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial view state comes from the URL so shared links reproduce the exact table.
+  const initial = useRef({
+    level: (RANKING_LEVELS.some(l => l.value === searchParams.get('level'))
+      ? searchParams.get('level')
+      : 'individual') as RankingLevel,
+    dataset: (searchParams.get('dataset') === 'sample' ? 'sample' : 'cycle') as Dataset,
+    sortKey: (searchParams.get('sort') && searchParams.get('sort')! in SORT_LABELS
+      ? searchParams.get('sort')
+      : 'rank') as SortKey,
+    sortDirection: (searchParams.get('dir') === 'desc' ? 'desc' : 'asc') as SortDirection,
+    page: Math.max(1, Number(searchParams.get('page')) || 1),
+    pageSize: PAGE_SIZES.includes(Number(searchParams.get('size'))) ? Number(searchParams.get('size')) : 25,
+    q: searchParams.get('q') ?? '',
+    compare: searchParams.get('compare') === '1',
+  }).current;
+
+  const [level, setLevel] = useState<RankingLevel>(initial.level);
+  const [dataset, setDataset] = useState<Dataset>(initial.dataset);
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [windowRange, setWindowRange] = useState<{ start?: string | null; end?: string | null }>({});
@@ -94,16 +113,22 @@ export default function Rankings() {
   const [servingStale, setServingStale] = useState(false);
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initial.q);
   const [searchTotal, setSearchTotal] = useState<number | undefined>();
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sort + pagination
-  const [sortKey, setSortKey] = useState<SortKey>('rank');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [sortKey, setSortKey] = useState<SortKey>(initial.sortKey);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection);
+  const [page, setPage] = useState(initial.page);
+  const [pageSize, setPageSize] = useState(initial.pageSize);
+
+  // Compare mode: 2027 cycle vs sample dataset, side by side
+  const [compare, setCompare] = useState(initial.compare);
+  const [compareData, setCompareData] = useState<RankEntry[] | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   // Find My Ranking state
   const [foundMe, setFoundMe] = useState<RankEntry | null>(null);
@@ -112,6 +137,9 @@ export default function Rankings() {
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
   const cacheKey = `rankings:v1:${dataset}:${level}`;
+  const otherDataset: Dataset = dataset === 'cycle' ? 'sample' : 'cycle';
+  const datasetLabel = (d: Dataset) => (d === 'cycle' ? '2027 Cycle' : 'Sample Data');
+
 
   const applyPayload = useCallback((payload: RankingsPayload) => {
     setData(payload.data);
