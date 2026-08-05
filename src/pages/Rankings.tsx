@@ -430,7 +430,7 @@ export default function Rankings() {
       [],
     ];
 
-    const csv = `${buildCsv([], meta)}\r\n${buildCsv(headers, rows)}`;
+    const csv = `${buildCsv(meta[0] as string[], meta.slice(1))}\r\n${buildCsv(headers, rows)}`;
     downloadCsv(`defit-rankings-${level}-${dataset}-${csvTimestamp()}.csv`, csv);
     toast({ title: 'Export ready', description: `${rows.length} row${rows.length === 1 ? '' : 's'} downloaded as CSV.` });
   };
