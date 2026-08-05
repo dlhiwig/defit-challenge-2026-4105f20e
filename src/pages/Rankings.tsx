@@ -961,18 +961,49 @@ export default function Rankings() {
                                   {entry.totalScore}
                                 </Badge>
                               </div>
-                              <div className="grid grid-cols-3 gap-2 text-xs">
-                                {['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])].map(c => (
-                                  <div key={c} className="text-center bg-secondary/50 rounded p-1.5">
-                                    <p className="text-muted-foreground">{COMPONENT_LABELS[c]}</p>
-                                    <p className="font-mono font-bold">
-                                      {c === 'A' ? entry.componentA : c === 'B' ? entry.componentB :
-                                       c === 'C' ? entry.componentC : c === 'D' ? entry.componentD :
-                                       c === 'E' ? entry.componentE : entry.componentF ?? '—'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
+                              {compare ? (
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {(() => {
+                                    const other = compareMap.get(entry.entityId);
+                                    return (
+                                      <>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">{datasetLabel(dataset)}</p>
+                                          <p className="font-mono font-bold">#{entry.finalRank} · {entry.totalScore} pts</p>
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">{datasetLabel(otherDataset)}</p>
+                                          <p className="font-mono font-bold">
+                                            {other ? `#${other.finalRank} · ${other.totalScore} pts` : 'not ranked'}
+                                          </p>
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">Rank Δ</p>
+                                          <Delta value={other ? entry.finalRank - other.finalRank : null} />
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">Score Δ</p>
+                                          <Delta value={other ? entry.totalScore - other.totalScore : null} />
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                  {['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])].map(c => (
+                                    <div key={c} className="text-center bg-secondary/50 rounded p-1.5">
+                                      <p className="text-muted-foreground">{COMPONENT_LABELS[c]}</p>
+                                      <p className="font-mono font-bold">
+                                        {c === 'A' ? entry.componentA : c === 'B' ? entry.componentB :
+                                         c === 'C' ? entry.componentC : c === 'D' ? entry.componentD :
+                                         c === 'E' ? entry.componentE : entry.componentF ?? '—'}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
                             </div>
                           );
                         })}
