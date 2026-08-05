@@ -1,96 +1,43 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-
-// API base URL - points to the DEFIT App which has the Neon database connection
-const API_BASE = 'https://defit.work';
-
-// Transform App API response to website's expected format
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformApiResponse(entry: any, level: string): RankEntry {
-  // Individual level
-  if (level === 'individual') {
-    return {
-      entityId: String(entry.participant_id),
-      entityName: `${entry.first_name} ${entry.last_name}`,
-      finalRank: entry.overall_rank,
-      totalScore: entry.total_score,
-      componentA: entry.rank_a,
-      componentB: entry.rank_b,
-      componentC: entry.rank_c,
-      componentD: entry.rank_d,
-      componentE: entry.rank_e,
-      componentF: null,
-      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
-      metadata: { unit: entry.command },
-    };
-  }
-  
-  // Team level
-  if (level === 'team') {
-    return {
-      entityId: entry.team_id,
-      entityName: entry.name,
-      finalRank: entry.overall_rank,
-      totalScore: entry.total_score,
-      componentA: entry.rank_a,
-      componentB: entry.rank_b,
-      componentC: entry.rank_c,
-      componentD: entry.rank_d,
-      componentE: entry.rank_e,
-      componentF: entry.rank_f,
-      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
-      metadata: { memberCount: entry.member_count },
-    };
-  }
-  
-  // Unit level
-  if (level === 'unit') {
-    return {
-      entityId: entry.uic || entry.unit_id,
-      entityName: entry.name || entry.uic,
-      finalRank: entry.overall_rank,
-      totalScore: entry.total_score,
-      componentA: entry.rank_a,
-      componentB: entry.rank_b,
-      componentC: entry.rank_c,
-      componentD: entry.rank_d,
-      componentE: entry.rank_e,
-      componentF: entry.rank_f,
-      rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
-      metadata: { memberCount: entry.member_count },
-    };
-  }
-  
-  // Command level
-  return {
-    entityId: entry.command_id || entry.name,
-    entityName: entry.name,
-    finalRank: entry.overall_rank,
-    totalScore: entry.total_score,
-    componentA: entry.rank_a,
-    componentB: entry.rank_b,
-    componentC: entry.rank_c,
-    componentD: entry.rank_d,
-    componentE: entry.rank_e,
-    componentF: entry.rank_f,
-    rawValues: { cardio: 0, strength: 0, hiit: 0, tmarm: 0, eRaw: 0, completionPct: 0 },
-    metadata: { memberCount: entry.member_count },
-  };
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
+  RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import type { RankEntry, RankingLevel, RankingsResponse } from '@/lib/scoring';
+import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
+
+type SortKey = 'rank' | 'score' | 'name' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+type SortDirection = 'asc' | 'desc';
+
+const SORT_LABELS: Record<SortKey, string> = {
+  rank: 'Overall Rank',
+  score: 'Total Score',
+  name: 'Name',
+  A: 'Cardio Rank',
+  B: 'Resistance Rank',
+  C: 'HIIT Rank',
+  D: 'TMAR-M Rank',
+  E: 'Consistency Rank',
+  F: 'Completion Rank',
+};
+
+const PAGE_SIZES = [10, 25, 50, 100];
 
 function RankIcon({ rank }: { rank: number }) {
   if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-400" />;
@@ -99,11 +46,27 @@ function RankIcon({ rank }: { rank: number }) {
   return <span className="font-bold text-muted-foreground">{rank}</span>;
 }
 
+function sortValue(entry: RankEntry, key: SortKey): number | string {
+  switch (key) {
+    case 'score': return entry.totalScore;
+    case 'name': return entry.entityName.toLowerCase();
+    case 'A': return entry.componentA;
+    case 'B': return entry.componentB;
+    case 'C': return entry.componentC;
+    case 'D': return entry.componentD;
+    case 'E': return entry.componentE;
+    case 'F': return entry.componentF ?? Number.MAX_SAFE_INTEGER;
+    default: return entry.finalRank;
+  }
+}
+
 export default function Rankings() {
+  const { user } = useAuth();
   const [level, setLevel] = useState<RankingLevel>('individual');
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Search state
@@ -112,50 +75,67 @@ export default function Rankings() {
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sort + pagination
+  const [sortKey, setSortKey] = useState<SortKey>('rank');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   // Find My Ranking state
   const [foundMe, setFoundMe] = useState<RankEntry | null>(null);
   const [findingMe, setFindingMe] = useState(false);
   const highlightedRef = useRef<HTMLTableRowElement | null>(null);
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchRankings = useCallback(async (search?: string, findMe?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Build query params for the App's API
-      const params = new URLSearchParams({ level, limit: '100' });
-      if (search) params.set('search', search);
-      if (findMe) params.set('id', findMe);
+  const fetchRankings = useCallback(
+    async (opts: { search?: string; findMe?: string; refresh?: boolean } = {}) => {
+      if (opts.refresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
+          body: {
+            level,
+            limit: 500,
+            search: opts.search ?? '',
+            findMe: opts.findMe ?? '',
+          },
+        });
+        if (fnError) throw fnError;
+        if (res?.error) throw new Error(res.error);
 
-      const res = await fetch(`${API_BASE}/api/rankings?${params}`);
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
-      
-      const response = await res.json();
-      if (!response.success) throw new Error(response.error || 'Failed to fetch rankings');
-      
-      // Transform API response to website format
-      const transformed = (response.data || []).map((e: unknown) => transformApiResponse(e, level));
-      setData(transformed);
-      setTotal(response.totalParticipants || response.count || 0);
-      setSearchTotal(search ? response.count : undefined);
-      // findMe handling - if searching by ID, the result is in data
-      if (findMe && transformed.length > 0) setFoundMe(transformed[0]);
-    } catch (err: any) {
-      console.error('Rankings error:', err);
-      setError(err.message || 'Failed to load rankings');
-    } finally {
-      setLoading(false);
-      setIsSearching(false);
-      setFindingMe(false);
-    }
-  }, [level]);
+        setData((res?.data ?? []) as RankEntry[]);
+        setTotal(res?.total ?? 0);
+        setSearchTotal(opts.search ? res?.searchTotal ?? res?.data?.length : undefined);
+        if (opts.findMe) setFoundMe((res?.foundMe as RankEntry) ?? null);
+      } catch (err) {
+        console.error('Rankings error:', err);
+        setError(
+          'The DEFIT ranking service did not respond. Scores are still recorded — this only affects the rankings view.'
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setIsSearching(false);
+        setFindingMe(false);
+      }
+    },
+    [level]
+  );
 
   useEffect(() => {
     setSearchQuery('');
     setFoundMe(null);
     setSearchTotal(undefined);
+    setPage(1);
+    setSortKey('rank');
+    setSortDirection('asc');
     fetchRankings();
   }, [level, fetchRankings]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [sortKey, sortDirection, pageSize, searchQuery]);
 
   // Debounced search
   const handleSearchChange = (value: string) => {
@@ -168,7 +148,7 @@ export default function Rankings() {
     }
     setIsSearching(true);
     debounceRef.current = setTimeout(() => {
-      fetchRankings(value.trim());
+      fetchRankings({ search: value.trim() });
     }, 400);
   };
 
@@ -179,14 +159,39 @@ export default function Rankings() {
     fetchRankings();
   };
 
-  // Note: "Find My Ranking" requires auth - use the DEFIT App (defit.work) for this feature
   const handleFindMe = async () => {
-    // Redirect to app for authenticated features
-    window.location.href = 'https://defit.work/dashboard/leaderboard';
+    if (!user) return;
+    setFindingMe(true);
+    await fetchRankings({ findMe: user.id, search: searchQuery.trim() || undefined });
   };
+
+  useEffect(() => {
+    if (!foundMe) return;
+    const node = highlightedRef.current ?? highlightedMobileRef.current;
+    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [foundMe, data]);
 
   const hasF = level !== 'individual';
   const isSearchActive = searchQuery.trim().length > 0;
+
+  const sorted = useMemo(() => {
+    const dir = sortDirection === 'asc' ? 1 : -1;
+    return [...data].sort((a, b) => {
+      const av = sortValue(a, sortKey);
+      const bv = sortValue(b, sortKey);
+      if (typeof av === 'string' || typeof bv === 'string') {
+        return String(av).localeCompare(String(bv)) * dir;
+      }
+      return (av - bv) * dir;
+    });
+  }, [data, sortKey, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEntries = sorted.slice(pageStart, pageStart + pageSize);
+
+  const sortKeys: SortKey[] = ['rank', 'score', 'name', 'A', 'B', 'C', 'D', 'E', ...(hasF ? (['F'] as SortKey[]) : [])];
 
   return (
     <main className="min-h-screen bg-background texture-canvas">
@@ -236,18 +241,20 @@ export default function Rankings() {
             </TabsList>
 
             {/* Search + Find Me Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name…"
+                  placeholder="Search by name, unit, or command…"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10 pr-10 bg-secondary/50 border-border"
+                  aria-label="Search rankings"
                 />
                 {searchQuery && (
                   <button
                     onClick={clearSearch}
+                    aria-label="Clear search"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -255,15 +262,63 @@ export default function Rankings() {
                 )}
               </div>
               {level === 'individual' && (
-                <Button
-                  variant="outline"
-                  onClick={handleFindMe}
-                  className="shrink-0"
-                >
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Find My Ranking
-                </Button>
+                user ? (
+                  <Button variant="outline" onClick={handleFindMe} disabled={findingMe} className="shrink-0">
+                    {findingMe ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserCheck className="w-4 h-4 mr-2" />}
+                    Find My Ranking
+                  </Button>
+                ) : (
+                  <Button variant="outline" asChild className="shrink-0">
+                    <Link to="/auth"><UserCheck className="w-4 h-4 mr-2" />Sign in to find your ranking</Link>
+                  </Button>
+                )
               )}
+            </div>
+
+            {/* Sort + page size controls */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Sort by:</span>
+              </div>
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                <SelectTrigger className="w-[180px] bg-secondary" aria-label="Sort field">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {sortKeys.map(k => (
+                    <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'))}
+                aria-label={`Toggle sort direction, currently ${sortDirection === 'asc' ? 'ascending' : 'descending'}`}
+              >
+                {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4 mr-2" /> : <ArrowDown className="w-4 h-4 mr-2" />}
+                {sortDirection === 'asc' ? 'Best first' : 'Worst first'}
+              </Button>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="w-[140px] bg-secondary" aria-label="Rows per page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {PAGE_SIZES.map(s => (
+                    <SelectItem key={s} value={String(s)}>{s} per page</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchRankings({ search: searchQuery.trim() || undefined, refresh: true })}
+                disabled={loading || refreshing}
+              >
+                {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Refresh
+              </Button>
             </div>
 
             {/* Found Me Banner */}
@@ -298,18 +353,41 @@ export default function Rankings() {
               <TabsContent key={l.value} value={l.value}>
                 <div className="glass rounded-2xl overflow-hidden">
                   {loading ? (
-                    <div className="p-12 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-                      <p className="text-muted-foreground">
+                    <div className="p-6 space-y-4" aria-busy="true" aria-live="polite">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
                         {isSearching ? 'Searching…' : `Loading ${l.label} rankings…`}
-                      </p>
+                      </div>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-4">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-1/3" />
+                            <Skeleton className="h-3 w-1/5" />
+                          </div>
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                      ))}
                     </div>
                   ) : error ? (
-                    <div className="p-12 text-center">
-                      <p className="text-destructive mb-4">{error}</p>
-                      <Button onClick={() => fetchRankings()}>Try Again</Button>
+                    <div className="p-12 text-center" role="alert">
+                      <WifiOff className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-heading font-bold mb-2">Rankings Temporarily Unavailable</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto mb-6">{error}</p>
+                      <div className="flex flex-wrap items-center justify-center gap-3">
+                        <Button
+                          onClick={() => fetchRankings({ search: searchQuery.trim() || undefined, refresh: true })}
+                          disabled={refreshing}
+                        >
+                          {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                          Retry
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <Link to="/report-issue">Report a Problem</Link>
+                        </Button>
+                      </div>
                     </div>
-                  ) : data.length === 0 ? (
+                  ) : sorted.length === 0 ? (
                     <div className="p-12 text-center">
                       <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                       <h3 className="text-lg font-heading font-bold mb-2">
@@ -330,15 +408,13 @@ export default function Rankings() {
                     </div>
                   ) : (
                     <>
-                      <div className="p-4 border-b border-border flex items-center justify-between">
+                      <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm text-muted-foreground">
                           {isSearchActive
-                            ? `Search Results (${searchTotal ?? data.length} matches)`
+                            ? `Search results (${searchTotal ?? sorted.length} matches)`
                             : `${total} ranked`}
+                          {' · '}Showing {pageStart + 1}–{pageStart + pageEntries.length} · sorted by {SORT_LABELS[sortKey]}
                         </span>
-                        <Button variant="outline" size="sm" onClick={() => fetchRankings(searchQuery || undefined)} disabled={loading}>
-                          Refresh
-                        </Button>
                       </div>
 
                       {/* Desktop table */}
@@ -358,7 +434,7 @@ export default function Rankings() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {data.map((entry) => {
+                            {pageEntries.map((entry) => {
                               const isMe = foundMe && entry.entityId === foundMe.entityId;
                               return (
                                 <TableRow
@@ -406,7 +482,7 @@ export default function Rankings() {
 
                       {/* Mobile cards */}
                       <div className="md:hidden divide-y divide-border">
-                        {data.map((entry) => {
+                        {pageEntries.map((entry) => {
                           const isMe = foundMe && entry.entityId === foundMe.entityId;
                           return (
                             <div
@@ -446,6 +522,31 @@ export default function Rankings() {
                             </div>
                           );
                         })}
+                      </div>
+
+                      {/* Pagination */}
+                      <div className="p-4 border-t border-border flex items-center justify-between gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage <= 1}
+                        >
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage >= totalPages}
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </div>
                     </>
                   )}

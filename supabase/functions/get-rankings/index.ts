@@ -9,7 +9,7 @@ const corsHeaders = {
 const HIIT_WEEKLY_CAP = 45
 const TMARM_WEEKLY_CAP = 60
 const DEFAULT_SCORING_WEEKS = 8
-const COMPLETION_MINS = { cardio: 120, strength: 50000, hiit: 300, tmarm: 200 }
+const COMPLETION_MINS = { cardio: 120, strength: 50000, hiit: 480, tmarm: 480 }
 const COMPLETION_WEIGHTS = { cardio: 0.3, strength: 0.3, hiit: 0.2, tmarm: 0.2 }
 
 // ─── TYPES ───
