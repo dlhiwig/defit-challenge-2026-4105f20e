@@ -9,8 +9,8 @@ const corsHeaders = {
 const CHALLENGE_MINIMUMS = {
   cardioMiles: 120,
   strengthLbs: 50000,
-  hiitMinutes: 300,
-  tmarmMinutes: 200,
+  hiitMinutes: 480,
+  tmarmMinutes: 480,
 }
 
 // Weights for overall completion calculation
