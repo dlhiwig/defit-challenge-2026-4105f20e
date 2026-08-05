@@ -41,7 +41,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img alt="DEFIT Challenge" className="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain" src={`${import.meta.env.BASE_URL}lovable-uploads/280d3fae-ac0e-42bb-bee8-23b1891a28c4.png`} />
+            <img alt="DEFIT Challenge" className="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain" src={doubleEagleLogo} />
             <span className="text-lg font-heading font-bold text-foreground uppercase tracking-wider hidden sm:block">
               DEFIT 2027 
             </span>

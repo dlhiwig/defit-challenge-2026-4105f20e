@@ -13,7 +13,7 @@ const CTASection = () => {
         <div className="glass rounded-3xl p-8 md:p-16 text-center max-w-4xl mx-auto">
           {/* Badge */}
           <div className="w-full max-w-md mx-auto mb-8 animate-float">
-            <img alt="Double Eagle Challenge Badge" className="w-full h-auto object-contain drop-shadow-2xl" src={`${import.meta.env.BASE_URL}lovable-uploads/ea5fb597-0bc6-44fc-b3a1-9564dd8b720a.png`} />
+            <img alt="Double Eagle Challenge Badge" className="w-full h-auto object-contain drop-shadow-2xl" src={kettlebellBadge} />
           </div>
 
           {/* Content */}

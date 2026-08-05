@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import doubleEagleLogo from "@/assets/double-eagle-logo.png";
 import { Mail, Instagram, Facebook, Youtube } from "lucide-react";
 
 const footerLinks = {
@@ -38,7 +39,7 @@ const Footer = () => {
               <img
                 alt="DEFIT Challenge"
                 className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 object-contain"
-                src={`${import.meta.env.BASE_URL}lovable-uploads/cc2d9315-be04-4d2c-a390-e524797420ec.png`}
+                src={doubleEagleLogo}
               />
             </Link>
             <p className="text-muted-foreground text-sm text-center italic">

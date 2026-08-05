@@ -112,7 +112,7 @@ export default function Auth() {
         <div className="container px-4 max-w-md mx-auto">
           <div className="glass rounded-2xl p-8">
             <div className="flex flex-col items-center mb-8">
-              <img alt="DEFIT Logo" className="w-40 h-40 mb-4 object-contain" src={`${import.meta.env.BASE_URL}lovable-uploads/97e87443-ab9a-45b2-852a-72f438faa764.png`} />
+              <img alt="DEFIT Logo" className="w-40 h-40 mb-4 object-contain" src={defitLogo} />
               <h1 className="text-2xl font-heading font-bold text-center">
                 <span className="text-gradient">DEFIT</span> Challenge
               </h1>
