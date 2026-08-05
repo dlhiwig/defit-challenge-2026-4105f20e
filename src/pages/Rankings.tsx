@@ -168,6 +168,18 @@ export default function Rankings() {
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
 
+  // Participant profile drawer (individual level only — entityId is the user id there)
+  const [profileFor, setProfileFor] = useState<{ userId: string; name: string; unit: string | null } | null>(null);
+  const openProfile = (entry: RankEntry) => {
+    if (level !== 'individual') return;
+    setProfileFor({
+      userId: entry.entityId,
+      name: entry.entityName,
+      unit: (entry.metadata?.unit as string | undefined) ?? null,
+    });
+  };
+
+
   // Find My Ranking state
   const [foundMe, setFoundMe] = useState<RankEntry | null>(null);
   const [findingMe, setFindingMe] = useState(false);
