@@ -883,15 +883,32 @@ export default function Rankings() {
                             {pageEntries.map((entry) => {
                               const isMe = foundMe && entry.entityId === foundMe.entityId;
                               return (
-                                <TableRow
-                                  key={entry.entityId}
-                                  ref={isMe ? highlightedRef : undefined}
-                                  className={`border-border transition-colors ${
-                                    isMe
-                                      ? 'bg-primary/15 ring-1 ring-primary/30'
-                                      : entry.finalRank <= 3 ? 'bg-primary/5' : ''
-                                  }`}
-                                >
+                                 <TableRow
+                                   key={entry.entityId}
+                                   ref={isMe ? highlightedRef : undefined}
+                                   role={level === 'individual' ? 'button' : undefined}
+                                   tabIndex={level === 'individual' ? 0 : undefined}
+                                   aria-label={
+                                     level === 'individual'
+                                       ? `View ${entry.entityName}'s workout history and scoring breakdown`
+                                       : undefined
+                                   }
+                                   onClick={() => openProfile(entry)}
+                                   onKeyDown={(e) => {
+                                     if (level === 'individual' && (e.key === 'Enter' || e.key === ' ')) {
+                                       e.preventDefault();
+                                       openProfile(entry);
+                                     }
+                                   }}
+                                   className={`border-border transition-colors ${
+                                     level === 'individual' ? 'cursor-pointer' : ''
+                                   } ${
+                                     isMe
+                                       ? 'bg-primary/15 ring-1 ring-primary/30'
+                                       : entry.finalRank <= 3 ? 'bg-primary/5' : ''
+                                   }`}
+                                 >
+
                                   <TableCell>
                                     <div className="flex justify-center"><RankIcon rank={entry.finalRank} /></div>
                                   </TableCell>
