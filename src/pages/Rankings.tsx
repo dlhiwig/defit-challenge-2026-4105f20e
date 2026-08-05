@@ -683,6 +683,8 @@ export default function Rankings() {
                 <Link2 className="w-4 h-4 mr-2" />
                 Copy share link
               </Button>
+              <SavedViewsMenu scope="rankings" basePath="/rankings" labels={VIEW_LABELS} />
+
               {cachedAt && (
                 <span
                   className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
