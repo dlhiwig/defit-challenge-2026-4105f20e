@@ -985,12 +985,29 @@ export default function Rankings() {
                             <div
                               key={entry.entityId}
                               ref={isMe ? highlightedMobileRef : undefined}
+                              role={level === 'individual' ? 'button' : undefined}
+                              tabIndex={level === 'individual' ? 0 : undefined}
+                              aria-label={
+                                level === 'individual'
+                                  ? `View ${entry.entityName}'s workout history and scoring breakdown`
+                                  : undefined
+                              }
+                              onClick={() => openProfile(entry)}
+                              onKeyDown={(e) => {
+                                if (level === 'individual' && (e.key === 'Enter' || e.key === ' ')) {
+                                  e.preventDefault();
+                                  openProfile(entry);
+                                }
+                              }}
                               className={`p-4 transition-colors ${
+                                level === 'individual' ? 'cursor-pointer' : ''
+                              } ${
                                 isMe
                                   ? 'bg-primary/15 ring-1 ring-primary/30'
                                   : entry.finalRank <= 3 ? 'bg-primary/5' : ''
                               }`}
                             >
+
                               <div className="flex items-center gap-3 mb-3">
                                 <RankIcon rank={entry.finalRank} />
                                 <div className="flex-1">
