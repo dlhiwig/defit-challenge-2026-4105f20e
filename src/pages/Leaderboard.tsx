@@ -855,12 +855,39 @@ export default function Leaderboard() {
                       ) : (
                         <RefreshCw className="w-4 h-4 mr-2" />
                       )}
-                      Retry
+                      Retry now
                     </Button>
+                    {diagnostics && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Stethoscope className="w-4 h-4 mr-2" />
+                              Diagnostics
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs bg-card border-border text-left">
+                            <p className="text-xs font-heading font-bold mb-1">Last response</p>
+                            <ul className="text-xs space-y-0.5 text-muted-foreground">
+                              <li>Endpoint: get-leaderboard</li>
+                              <li>
+                                Status:{' '}
+                                {diagnostics.ok ? 'OK (200)' : diagnostics.status ?? 'no HTTP status (network/CORS)'}
+                              </li>
+                              <li>Checked: {new Date(diagnostics.at).toLocaleTimeString()}</li>
+                              <li>Failed attempts: {diagnostics.attempts}</li>
+                              <li className="break-words">Detail: {diagnostics.message}</li>
+                              <li>Cached standings: none stored</li>
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     <Button variant="outline" asChild>
                       <Link to="/report-issue">Report a Problem</Link>
                     </Button>
                   </div>
+
                 </div>
               ) : processed.length === 0 ? (
                 <div className="p-12 text-center">
