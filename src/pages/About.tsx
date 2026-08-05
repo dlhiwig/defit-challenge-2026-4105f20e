@@ -135,7 +135,7 @@ const About = () => {
             </h2>
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-heading font-bold text-gradient">12 Jan</div>
+                <div className="text-3xl font-heading font-bold text-gradient">11 Jan</div>
                 <div className="text-muted-foreground text-sm uppercase tracking-wide">Challenge Begins</div>
               </div>
               <div className="text-center">
@@ -143,7 +143,7 @@ const About = () => {
                 <div className="text-muted-foreground text-sm uppercase tracking-wide">Duration</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-heading font-bold text-gradient">22 Mar</div>
+                <div className="text-3xl font-heading font-bold text-gradient">21 Mar</div>
                 <div className="text-muted-foreground text-sm uppercase tracking-wide">Challenge Ends</div>
               </div>
             </div>
