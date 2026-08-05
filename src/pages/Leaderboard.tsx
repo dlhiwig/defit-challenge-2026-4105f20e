@@ -82,59 +82,98 @@ const METRIC_LABELS: Record<SortMetric, string> = {
   name: 'Participant Name',
 };
 
+const CACHE_KEY = 'leaderboard:v1';
+
+interface CachedPayload {
+  entries: LeaderboardEntry[];
+  minimums: Minimums;
+}
+
+function normalize(data: unknown): CachedPayload {
+  const raw = data as { data?: LeaderboardEntry[]; challengeMinimums?: Minimums } | undefined;
+  const entries: LeaderboardEntry[] = (raw?.data ?? []).map((e: LeaderboardEntry) => ({
+    rank: e.rank,
+    userId: String(e.userId),
+    name: e.name || 'Anonymous Soldier',
+    unit: e.unit ?? null,
+    cardioMiles: Number(e.cardioMiles) || 0,
+    strengthLbs: Number(e.strengthLbs) || 0,
+    hiitMinutes: Number(e.hiitMinutes) || 0,
+    tmarmMinutes: Number(e.tmarmMinutes) || 0,
+    cardioCompletion: Number(e.cardioCompletion) || 0,
+    strengthCompletion: Number(e.strengthCompletion) || 0,
+    hiitCompletion: Number(e.hiitCompletion) || 0,
+    tmarmCompletion: Number(e.tmarmCompletion) || 0,
+    overallCompletion: Number(e.overallCompletion) || 0,
+  }));
+  return { entries, minimums: raw?.challengeMinimums ?? CHALLENGE_MINIMUMS };
+}
+
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [minimums, setMinimums] = useState<Minimums>(CHALLENGE_MINIMUMS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [servingStale, setServingStale] = useState(false);
   const [sortMetric, setSortMetric] = useState<SortMetric>('overall');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  const fetchLeaderboard = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
+  const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean } = {}) => {
+    if (opts.background) setRefreshing(true);
+    else if (opts.isRefresh) setRefreshing(true);
     else setLoading(true);
-    setError(null);
+    if (!opts.background) setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('get-leaderboard');
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
 
-      const entries: LeaderboardEntry[] = (data?.data ?? []).map((e: LeaderboardEntry) => ({
-        rank: e.rank,
-        userId: String(e.userId),
-        name: e.name || 'Anonymous Soldier',
-        unit: e.unit ?? null,
-        cardioMiles: Number(e.cardioMiles) || 0,
-        strengthLbs: Number(e.strengthLbs) || 0,
-        hiitMinutes: Number(e.hiitMinutes) || 0,
-        tmarmMinutes: Number(e.tmarmMinutes) || 0,
-        cardioCompletion: Number(e.cardioCompletion) || 0,
-        strengthCompletion: Number(e.strengthCompletion) || 0,
-        hiitCompletion: Number(e.hiitCompletion) || 0,
-        tmarmCompletion: Number(e.tmarmCompletion) || 0,
-        overallCompletion: Number(e.overallCompletion) || 0,
-      }));
-
-      setLeaderboard(entries);
-      if (data?.challengeMinimums) setMinimums(data.challengeMinimums);
+      const payload = normalize(data);
+      setLeaderboard(payload.entries);
+      setMinimums(payload.minimums);
+      writeCache<CachedPayload>(CACHE_KEY, payload);
+      setCachedAt(Date.now());
+      setServingStale(false);
+      setError(null);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
-      setError(
-        'We could not reach the DEFIT scoring service just now. Your logged workouts are safe — this only affects the standings view.'
-      );
+      // Resilience: fall back to the last known standings rather than an error wall.
+      const cached = readCache<CachedPayload>(CACHE_KEY, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
+      if (cached) {
+        setLeaderboard(cached.data.entries);
+        setMinimums(cached.data.minimums);
+        setCachedAt(cached.cachedAt);
+        setServingStale(true);
+      } else {
+        setError(
+          'We could not reach the DEFIT scoring service just now. Your logged workouts are safe — this only affects the standings view.'
+        );
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
+  // Stale-while-revalidate: paint cached standings instantly, refresh in background.
   useEffect(() => {
+    const cached = readCache<CachedPayload>(CACHE_KEY);
+    if (cached && !cached.isExpired) {
+      setLeaderboard(cached.data.entries);
+      setMinimums(cached.data.minimums);
+      setCachedAt(cached.cachedAt);
+      setLoading(false);
+      if (cached.isStale) fetchLeaderboard({ background: true });
+      return;
+    }
     fetchLeaderboard();
   }, [fetchLeaderboard]);
+
 
   useEffect(() => {
     // JSON-LD schema markup
