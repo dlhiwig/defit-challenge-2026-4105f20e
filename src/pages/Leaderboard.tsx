@@ -24,6 +24,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Trophy,
   Medal,
   Award,
@@ -46,12 +52,18 @@ import {
   Link2,
   CheckCircle2,
   Timer,
+  Stethoscope,
 } from 'lucide-react';
 import { CHALLENGE_MINIMUMS } from '@/types/workout';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
 import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
 import { copyCurrentViewLink } from '@/lib/shareView';
+import { computeMovers, toSnapshot, type MoverSnapshot, type MoversResult } from '@/lib/topMovers';
+import TopMoversPanel from '@/components/TopMoversPanel';
+import SavedViewsMenu from '@/components/SavedViewsMenu';
+import ParticipantProfileDrawer from '@/components/ParticipantProfileDrawer';
 import { useToast } from '@/hooks/use-toast';
+
 
 type SortMetric = 'overall' | 'cardio' | 'strength' | 'hiit' | 'tmarm' | 'name';
 type SortDirection = 'desc' | 'asc';
