@@ -26,8 +26,11 @@ import { initializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 // Initialize Firebase on module load
 initializeFirebase();
 
+// Firebase exposes `uid`; the app consumes `id` throughout, so we expose both.
+export type AppUser = User & { id: string };
+
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   session: { access_token?: string } | null; // Compatibility with old code
   loading: boolean;
   isDemoMode: boolean; // Always false now
@@ -42,13 +45,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+      setUser(
+        firebaseUser
+          ? (Object.assign(Object.create(Object.getPrototypeOf(firebaseUser)), firebaseUser, {
+              id: firebaseUser.uid,
+            }) as AppUser)
+          : null
+      );
       setLoading(false);
     });
 
