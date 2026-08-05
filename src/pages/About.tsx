@@ -45,11 +45,12 @@ const About = () => {
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              What is <span className="text-gradient">DEFIT?</span>
+              What is <span className="text-gradient">DEFIT 2027?</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
               The Double Eagle Fitness Challenge is a ten-week holistic health and fitness (H2F) 
-              program designed for individuals, teams, and units across the United States Army Reserve.
+              program running 11 Jan – 21 Mar 2027 for individuals, teams, and units across the 
+              United States Army Reserve.
             </p>
           </div>
         </div>
