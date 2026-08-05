@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import doubleEagleLogo from "@/assets/double-eagle-logo.png";
+import defitEmblem from "@/assets/defit-kettlebell-eagle.png.asset.json";
 import { Mail, Instagram, Facebook, Youtube } from "lucide-react";
 
 const footerLinks = {
@@ -37,9 +37,13 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1 flex flex-col items-center">
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
-                alt="DEFIT Challenge"
-                className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 object-contain"
-                src={doubleEagleLogo}
+                alt="DEFIT 2027 emblem: gold kettlebell with a mirrored double eagle head"
+                src={defitEmblem.url}
+                width={192}
+                height={192}
+                loading="lazy"
+                decoding="async"
+                className="h-24 w-24 shrink-0 object-contain sm:h-32 sm:w-32 md:h-48 md:w-48"
               />
             </Link>
             <p className="text-muted-foreground text-sm text-center italic">
