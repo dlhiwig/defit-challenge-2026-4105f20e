@@ -30,6 +30,9 @@ import {
   CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
   CHALLENGE_WEEKS, cycleStatus,
 } from '@/lib/challenge';
+import SavedViewsMenu from '@/components/SavedViewsMenu';
+import ParticipantProfileDrawer from '@/components/ParticipantProfileDrawer';
+
 
 
 type Dataset = 'cycle' | 'sample';
@@ -104,6 +107,20 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
   }
 }
 
+/** Friendly labels for saved-view descriptions. */
+const VIEW_LABELS: Record<string, (value: string) => string> = {
+  level: v => `${v} level`,
+  dataset: v => (v === 'sample' ? 'sample data' : '2027 cycle'),
+  sort: v => `sorted by ${SORT_LABELS[v as SortKey] ?? v}`,
+  dir: v => (v === 'asc' ? 'ascending' : 'descending'),
+  q: v => `search “${v}”`,
+  page: v => `page ${v}`,
+  size: v => `${v} per page`,
+  compare: () => 'compare mode on',
+};
+
+
+
 export default function Rankings() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -153,6 +170,18 @@ export default function Rankings() {
   const [compareData, setCompareData] = useState<RankEntry[] | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
+
+  // Participant profile drawer (individual level only — entityId is the user id there)
+  const [profileFor, setProfileFor] = useState<{ userId: string; name: string; unit: string | null } | null>(null);
+  const openProfile = (entry: RankEntry) => {
+    if (level !== 'individual') return;
+    setProfileFor({
+      userId: entry.entityId,
+      name: entry.entityName,
+      unit: (entry.metadata?.unit as string | undefined) ?? null,
+    });
+  };
+
 
   // Find My Ranking state
   const [foundMe, setFoundMe] = useState<RankEntry | null>(null);
@@ -654,6 +683,8 @@ export default function Rankings() {
                 <Link2 className="w-4 h-4 mr-2" />
                 Copy share link
               </Button>
+              <SavedViewsMenu scope="rankings" basePath="/rankings" labels={VIEW_LABELS} />
+
               {cachedAt && (
                 <span
                   className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -857,15 +888,32 @@ export default function Rankings() {
                             {pageEntries.map((entry) => {
                               const isMe = foundMe && entry.entityId === foundMe.entityId;
                               return (
-                                <TableRow
-                                  key={entry.entityId}
-                                  ref={isMe ? highlightedRef : undefined}
-                                  className={`border-border transition-colors ${
-                                    isMe
-                                      ? 'bg-primary/15 ring-1 ring-primary/30'
-                                      : entry.finalRank <= 3 ? 'bg-primary/5' : ''
-                                  }`}
-                                >
+                                 <TableRow
+                                   key={entry.entityId}
+                                   ref={isMe ? highlightedRef : undefined}
+                                   role={level === 'individual' ? 'button' : undefined}
+                                   tabIndex={level === 'individual' ? 0 : undefined}
+                                   aria-label={
+                                     level === 'individual'
+                                       ? `View ${entry.entityName}'s workout history and scoring breakdown`
+                                       : undefined
+                                   }
+                                   onClick={() => openProfile(entry)}
+                                   onKeyDown={(e) => {
+                                     if (level === 'individual' && (e.key === 'Enter' || e.key === ' ')) {
+                                       e.preventDefault();
+                                       openProfile(entry);
+                                     }
+                                   }}
+                                   className={`border-border transition-colors ${
+                                     level === 'individual' ? 'cursor-pointer' : ''
+                                   } ${
+                                     isMe
+                                       ? 'bg-primary/15 ring-1 ring-primary/30'
+                                       : entry.finalRank <= 3 ? 'bg-primary/5' : ''
+                                   }`}
+                                 >
+
                                   <TableCell>
                                     <div className="flex justify-center"><RankIcon rank={entry.finalRank} /></div>
                                   </TableCell>
@@ -942,12 +990,29 @@ export default function Rankings() {
                             <div
                               key={entry.entityId}
                               ref={isMe ? highlightedMobileRef : undefined}
+                              role={level === 'individual' ? 'button' : undefined}
+                              tabIndex={level === 'individual' ? 0 : undefined}
+                              aria-label={
+                                level === 'individual'
+                                  ? `View ${entry.entityName}'s workout history and scoring breakdown`
+                                  : undefined
+                              }
+                              onClick={() => openProfile(entry)}
+                              onKeyDown={(e) => {
+                                if (level === 'individual' && (e.key === 'Enter' || e.key === ' ')) {
+                                  e.preventDefault();
+                                  openProfile(entry);
+                                }
+                              }}
                               className={`p-4 transition-colors ${
+                                level === 'individual' ? 'cursor-pointer' : ''
+                              } ${
                                 isMe
                                   ? 'bg-primary/15 ring-1 ring-primary/30'
                                   : entry.finalRank <= 3 ? 'bg-primary/5' : ''
                               }`}
                             >
+
                               <div className="flex items-center gap-3 mb-3">
                                 <RankIcon rank={entry.finalRank} />
                                 <div className="flex-1">
@@ -1042,7 +1107,17 @@ export default function Rankings() {
         </div>
       </section>
 
+      <ParticipantProfileDrawer
+        open={!!profileFor}
+        onOpenChange={(open) => !open && setProfileFor(null)}
+        userId={profileFor?.userId ?? null}
+        fallbackName={profileFor?.name ?? ''}
+        fallbackUnit={profileFor?.unit ?? null}
+        dataset={dataset}
+      />
+
       <Footer />
+
     </main>
   );
 }

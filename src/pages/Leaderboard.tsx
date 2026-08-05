@@ -24,6 +24,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Trophy,
   Medal,
   Award,
@@ -46,12 +52,18 @@ import {
   Link2,
   CheckCircle2,
   Timer,
+  Stethoscope,
 } from 'lucide-react';
 import { CHALLENGE_MINIMUMS } from '@/types/workout';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
 import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
 import { copyCurrentViewLink } from '@/lib/shareView';
+import { computeMovers, toSnapshot, type MoverSnapshot, type MoversResult } from '@/lib/topMovers';
+import TopMoversPanel from '@/components/TopMoversPanel';
+import SavedViewsMenu from '@/components/SavedViewsMenu';
+import ParticipantProfileDrawer from '@/components/ParticipantProfileDrawer';
 import { useToast } from '@/hooks/use-toast';
+
 
 type SortMetric = 'overall' | 'cardio' | 'strength' | 'hiit' | 'tmarm' | 'name';
 type SortDirection = 'desc' | 'asc';
@@ -91,6 +103,27 @@ const METRIC_LABELS: Record<SortMetric, string> = {
 };
 
 const CACHE_KEY = 'leaderboard:v1';
+/** Last standings snapshot, used to compute Top Movers on the next refresh. */
+const SNAPSHOT_KEY = 'leaderboard:snapshot:v1';
+
+/** Friendly labels for saved-view descriptions. */
+const VIEW_LABELS: Record<string, (value: string) => string> = {
+  sort: v => `sorted by ${METRIC_LABELS[v as SortMetric] ?? v}`,
+  dir: v => (v === 'asc' ? 'low to high' : 'high to low'),
+  q: v => `search “${v}”`,
+  page: v => `page ${v}`,
+  size: v => `${v} per page`,
+  auto: v => `auto-refresh ${v} min`,
+};
+
+interface Diagnostics {
+  at: number;
+  ok: boolean;
+  status: number | null;
+  message: string;
+  attempts: number;
+}
+
 
 const AUTO_REFRESH_OPTIONS = [
   { value: '0', label: 'Auto-refresh off', ms: 0 },
@@ -162,10 +195,19 @@ export default function Leaderboard() {
   const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
   const firstPageReset = useRef(true);
 
+  // Top Movers + service diagnostics
+  const [movers, setMovers] = useState<MoversResult | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const attempts = useRef(0);
+
+  // Participant profile drawer
+  const [profileFor, setProfileFor] = useState<{ userId: string; name: string; unit: string | null } | null>(null);
+
   const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean; auto?: boolean } = {}) => {
     if (opts.background || opts.isRefresh || opts.auto) setRefreshing(true);
     else setLoading(true);
     if (!opts.background) setError(null);
+    attempts.current += 1;
     try {
       const { data, error: fnError } = await supabase.functions.invoke('get-leaderboard');
       if (fnError) throw fnError;
@@ -185,8 +227,42 @@ export default function Leaderboard() {
       setServingStale(false);
       if (opts.auto) setLastAutoAt(Date.now());
       setError(null);
+      attempts.current = 0;
+      setDiagnostics({
+        at: Date.now(),
+        ok: true,
+        status: 200,
+        message: `get-leaderboard returned ${payload.entries.length} participants`,
+        attempts: 0,
+      });
+
+      // Top Movers: diff against the last snapshot, then store the new one.
+      const snapshotEntries = payload.entries.map((e) => ({
+        userId: e.userId,
+        name: e.name,
+        unit: e.unit,
+        rank: e.rank,
+        overallCompletion: e.overallCompletion,
+      }));
+      const previous = readCache<MoverSnapshot>(SNAPSHOT_KEY, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
+      const result = computeMovers(snapshotEntries, previous?.data ?? null);
+      const snapshotChanged =
+        !previous || JSON.stringify(previous.data.entries) !== JSON.stringify(snapshotEntries);
+      if (result && snapshotChanged) setMovers(result);
+      if (snapshotChanged) writeCache<MoverSnapshot>(SNAPSHOT_KEY, toSnapshot(snapshotEntries));
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? Number((err as { status?: number }).status) || null
+          : (err as { context?: { status?: number } })?.context?.status ?? null;
+      setDiagnostics({
+        at: Date.now(),
+        ok: false,
+        status,
+        message: err instanceof Error ? err.message : 'Unknown network error',
+        attempts: attempts.current,
+      });
       // Resilience: fall back to the last known standings rather than an error wall.
       const cached = readCache<CachedPayload>(CACHE_KEY, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
       if (cached) {
@@ -204,6 +280,7 @@ export default function Leaderboard() {
       setRefreshing(false);
     }
   }, []);
+
 
   // Stale-while-revalidate: paint cached standings instantly, refresh in background.
   useEffect(() => {
@@ -499,6 +576,14 @@ export default function Leaderboard() {
         </div>
       </section>
 
+      {/* Top Movers since the previous cached standings */}
+      <TopMoversPanel
+        movers={movers}
+        onSelect={(userId, name, unit) => setProfileFor({ userId, name, unit })}
+      />
+
+
+
       {/* Disclaimer */}
       <section className="pb-6">
         <div className="container px-4">
@@ -631,6 +716,8 @@ export default function Leaderboard() {
                   Copy share link
                 </Button>
 
+                <SavedViewsMenu scope="leaderboard" basePath="/leaderboard" labels={VIEW_LABELS} />
+
                 {cachedAt && (
                   <span
                     className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -642,6 +729,63 @@ export default function Leaderboard() {
                   </span>
                 )}
               </div>
+
+              {/* Service unreachable: manual retry + last response diagnostics */}
+              {(servingStale || (diagnostics && !diagnostics.ok)) && (
+                <div
+                  className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
+                  role="status"
+                >
+                  <WifiOff className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs text-amber-200/80">
+                    The scoring service did not respond on the last attempt.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fetchLeaderboard({ isRefresh: true })}
+                    disabled={refreshing}
+                  >
+                    {refreshing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Retry now
+                  </Button>
+                  {diagnostics && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="Show last response diagnostics"
+                          >
+                            <Stethoscope className="w-3.5 h-3.5" />
+                            Diagnostics
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs bg-card border-border text-left">
+                          <p className="text-xs font-heading font-bold mb-1">Last response</p>
+                          <ul className="text-xs space-y-0.5 text-muted-foreground">
+                            <li>Endpoint: get-leaderboard</li>
+                            <li>Status: {diagnostics.ok ? 'OK (200)' : diagnostics.status ?? 'no HTTP status (network/CORS)'}</li>
+                            <li>Checked: {new Date(diagnostics.at).toLocaleTimeString()}</li>
+                            <li>Failed attempts: {diagnostics.attempts}</li>
+                            <li className="break-words">Detail: {diagnostics.message}</li>
+                            <li>
+                              Cached standings:{' '}
+                              {cachedAt ? `${formatCacheAge(cachedAt)} old` : 'none stored'}
+                            </li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              )}
+
 
               {/* Auto-refresh status */}
               {intervalMs > 0 && (
@@ -711,12 +855,39 @@ export default function Leaderboard() {
                       ) : (
                         <RefreshCw className="w-4 h-4 mr-2" />
                       )}
-                      Retry
+                      Retry now
                     </Button>
+                    {diagnostics && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Stethoscope className="w-4 h-4 mr-2" />
+                              Diagnostics
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs bg-card border-border text-left">
+                            <p className="text-xs font-heading font-bold mb-1">Last response</p>
+                            <ul className="text-xs space-y-0.5 text-muted-foreground">
+                              <li>Endpoint: get-leaderboard</li>
+                              <li>
+                                Status:{' '}
+                                {diagnostics.ok ? 'OK (200)' : diagnostics.status ?? 'no HTTP status (network/CORS)'}
+                              </li>
+                              <li>Checked: {new Date(diagnostics.at).toLocaleTimeString()}</li>
+                              <li>Failed attempts: {diagnostics.attempts}</li>
+                              <li className="break-words">Detail: {diagnostics.message}</li>
+                              <li>Cached standings: none stored</li>
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     <Button variant="outline" asChild>
                       <Link to="/report-issue">Report a Problem</Link>
                     </Button>
                   </div>
+
                 </div>
               ) : processed.length === 0 ? (
                 <div className="p-12 text-center">
@@ -768,7 +939,19 @@ export default function Leaderboard() {
                         {pageEntries.map((entry) => (
                           <TableRow
                             key={entry.userId}
-                            className={`border-border ${
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View ${entry.name}'s workout history and scoring breakdown`}
+                            onClick={() =>
+                              setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit });
+                              }
+                            }}
+                            className={`border-border cursor-pointer ${
                               entry.displayRank <= 3 ? getRankBadgeClass(entry.displayRank) : ''
                             }`}
                           >
@@ -785,6 +968,7 @@ export default function Leaderboard() {
                                 )}
                               </div>
                             </TableCell>
+
                             <TableCell className="text-right">
                               <p className="font-mono">{entry.cardioMiles.toFixed(1)} mi</p>
                               <p className="text-xs text-muted-foreground">
@@ -830,10 +1014,23 @@ export default function Leaderboard() {
                     {pageEntries.map((entry) => (
                       <div
                         key={entry.userId}
-                        className={`p-4 ${
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View ${entry.name}'s workout history and scoring breakdown`}
+                        onClick={() =>
+                          setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit });
+                          }
+                        }}
+                        className={`p-4 cursor-pointer ${
                           entry.displayRank <= 3 ? getRankBadgeClass(entry.displayRank) : ''
                         }`}
                       >
+
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">{getRankIcon(entry.displayRank)}</div>
                           <div className="flex-1 min-w-0">
@@ -954,7 +1151,18 @@ export default function Leaderboard() {
         </div>
       </section>
 
+      <ParticipantProfileDrawer
+        open={!!profileFor}
+        onOpenChange={(open) => !open && setProfileFor(null)}
+        userId={profileFor?.userId ?? null}
+        fallbackName={profileFor?.name ?? ''}
+        fallbackUnit={profileFor?.unit ?? null}
+
+        dataset="cycle"
+      />
+
       <Footer />
+
     </main>
   );
 }
