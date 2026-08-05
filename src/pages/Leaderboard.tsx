@@ -1155,8 +1155,9 @@ export default function Leaderboard() {
         open={!!profileFor}
         onOpenChange={(open) => !open && setProfileFor(null)}
         userId={profileFor?.userId ?? null}
-        name={profileFor?.name ?? ''}
-        unit={profileFor?.unit ?? null}
+        fallbackName={profileFor?.name ?? ''}
+        fallbackUnit={profileFor?.unit ?? null}
+
         dataset="cycle"
       />
 
