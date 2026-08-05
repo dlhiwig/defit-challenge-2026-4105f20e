@@ -806,13 +806,27 @@ export default function Rankings() {
                             <TableRow className="border-border hover:bg-transparent">
                               <TableHead className="w-16">Rank</TableHead>
                               <TableHead>Name</TableHead>
-                              <TableHead className="text-center">Cardio</TableHead>
-                              <TableHead className="text-center">Resistance</TableHead>
-                              <TableHead className="text-center">HIIT</TableHead>
-                              <TableHead className="text-center">TMAR-M</TableHead>
-                              <TableHead className="text-center">Consistency</TableHead>
-                              {hasF && <TableHead className="text-center">Completion</TableHead>}
-                              <TableHead className="text-center font-bold">Total</TableHead>
+                              {compare ? (
+                                <>
+                                  <TableHead className="text-center">{datasetLabel(dataset)} Rank</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(dataset)} Score</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(otherDataset)} Rank</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(otherDataset)} Score</TableHead>
+                                  <TableHead className="text-center">Rank Δ</TableHead>
+                                  <TableHead className="text-center font-bold">Score Δ</TableHead>
+                                </>
+                              ) : (
+                                <>
+                                  <TableHead className="text-center">Cardio</TableHead>
+                                  <TableHead className="text-center">Resistance</TableHead>
+                                  <TableHead className="text-center">HIIT</TableHead>
+                                  <TableHead className="text-center">TMAR-M</TableHead>
+                                  <TableHead className="text-center">Consistency</TableHead>
+                                  {hasF && <TableHead className="text-center">Completion</TableHead>}
+                                  <TableHead className="text-center font-bold">Total</TableHead>
+                                </>
+                              )}
+
                             </TableRow>
                           </TableHeader>
                           <TableBody>
