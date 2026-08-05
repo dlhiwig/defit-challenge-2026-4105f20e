@@ -204,16 +204,30 @@ export default function Rankings() {
     [level, dataset, cacheKey, applyPayload]
   );
 
+  const firstLoad = useRef(true);
+  const firstPageReset = useRef(true);
+
   // Stale-while-revalidate on level/dataset change
   useEffect(() => {
-    setSearchQuery('');
-    setFoundMe(null);
-    setSearchTotal(undefined);
-    setPage(1);
-    setSortKey('rank');
-    setSortDirection('asc');
-    setServingStale(false);
-    setCachedAt(null);
+    if (firstLoad.current) {
+      // Honour URL-provided view state on first load instead of resetting it.
+      firstLoad.current = false;
+      const q = initial.q.trim();
+      if (q) {
+        setIsSearching(true);
+        fetchRankings({ search: q });
+        return;
+      }
+    } else {
+      setSearchQuery('');
+      setFoundMe(null);
+      setSearchTotal(undefined);
+      setPage(1);
+      setSortKey('rank');
+      setSortDirection('asc');
+      setServingStale(false);
+      setCachedAt(null);
+    }
 
     const cached = readCache<RankingsPayload>(cacheKey);
     if (cached && !cached.isExpired) {
@@ -225,12 +239,62 @@ export default function Rankings() {
       return;
     }
     fetchRankings();
-  }, [level, dataset, cacheKey, fetchRankings, applyPayload]);
+  }, [level, dataset, cacheKey, fetchRankings, applyPayload, initial.q]);
 
+  // Compare mode pulls the counterpart dataset for the same level.
+  useEffect(() => {
+    if (!compare) {
+      setCompareData(null);
+      setCompareError(null);
+      return;
+    }
+    let cancelled = false;
+    setCompareLoading(true);
+    setCompareError(null);
+    (async () => {
+      try {
+        const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
+          body: { level, dataset: otherDataset, limit: 500, search: '', findMe: '' },
+        });
+        if (fnError) throw fnError;
+        if (res?.error) throw new Error(res.error);
+        if (!cancelled) setCompareData((res?.data ?? []) as RankEntry[]);
+      } catch (err) {
+        console.error('Compare dataset error:', err);
+        if (!cancelled) {
+          setCompareData(null);
+          setCompareError(`Could not load the ${datasetLabel(otherDataset)} standings to compare against.`);
+        }
+      } finally {
+        if (!cancelled) setCompareLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compare, level, otherDataset]);
 
   useEffect(() => {
+    if (firstPageReset.current) {
+      firstPageReset.current = false;
+      return;
+    }
     setPage(1);
   }, [sortKey, sortDirection, pageSize, searchQuery]);
+
+  // Keep the URL in sync so the current view is shareable.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (level !== 'individual') params.set('level', level);
+    if (dataset !== 'cycle') params.set('dataset', dataset);
+    if (sortKey !== 'rank') params.set('sort', sortKey);
+    if (sortDirection !== 'asc') params.set('dir', sortDirection);
+    if (page > 1) params.set('page', String(page));
+    if (pageSize !== 25) params.set('size', String(pageSize));
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (compare) params.set('compare', '1');
+    setSearchParams(params, { replace: true });
+  }, [level, dataset, sortKey, sortDirection, page, pageSize, searchQuery, compare, setSearchParams]);
+
 
   // Debounced search
   const handleSearchChange = (value: string) => {
