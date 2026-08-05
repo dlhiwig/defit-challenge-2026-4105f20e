@@ -37,7 +37,7 @@ const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
-The DEFIT 2027 Double Eagle Fitness Challenge — a 10-week H2F program
+            The DEFIT 2027 Double Eagle Fitness Challenge — a 10-week H2F program
             building physical and spiritual readiness across the Army Reserve.
           </p>
 
