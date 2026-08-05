@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,15 +19,18 @@ import {
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
   RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  CalendarDays, FlaskConical,
+  CalendarDays, FlaskConical, Download, Link2, Columns3, Minus,
 } from 'lucide-react';
 import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
+import { copyCurrentViewLink } from '@/lib/shareView';
 import {
   CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
   CHALLENGE_WEEKS, cycleStatus,
 } from '@/lib/challenge';
+
 
 type Dataset = 'cycle' | 'sample';
 
@@ -62,6 +66,30 @@ function RankIcon({ rank }: { rank: number }) {
   return <span className="font-bold text-muted-foreground">{rank}</span>;
 }
 
+/** Rank/score change between datasets. Lower is better, so negative = improvement. */
+function Delta({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-xs text-muted-foreground">not ranked</span>;
+  if (value === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+        <Minus className="w-3 h-3" />0
+      </span>
+    );
+  }
+  const better = value < 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${
+        better ? 'text-emerald-400' : 'text-amber-400'
+      }`}
+    >
+      {better ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />}
+      {value > 0 ? `+${value}` : value}
+    </span>
+  );
+}
+
+
 function sortValue(entry: RankEntry, key: SortKey): number | string {
   switch (key) {
     case 'score': return entry.totalScore;
@@ -78,8 +106,27 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
 
 export default function Rankings() {
   const { user } = useAuth();
-  const [level, setLevel] = useState<RankingLevel>('individual');
-  const [dataset, setDataset] = useState<Dataset>('cycle');
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial view state comes from the URL so shared links reproduce the exact table.
+  const initial = useRef({
+    level: (RANKING_LEVELS.some(l => l.value === searchParams.get('level'))
+      ? searchParams.get('level')
+      : 'individual') as RankingLevel,
+    dataset: (searchParams.get('dataset') === 'sample' ? 'sample' : 'cycle') as Dataset,
+    sortKey: (searchParams.get('sort') && searchParams.get('sort')! in SORT_LABELS
+      ? searchParams.get('sort')
+      : 'rank') as SortKey,
+    sortDirection: (searchParams.get('dir') === 'desc' ? 'desc' : 'asc') as SortDirection,
+    page: Math.max(1, Number(searchParams.get('page')) || 1),
+    pageSize: PAGE_SIZES.includes(Number(searchParams.get('size'))) ? Number(searchParams.get('size')) : 25,
+    q: searchParams.get('q') ?? '',
+    compare: searchParams.get('compare') === '1',
+  }).current;
+
+  const [level, setLevel] = useState<RankingLevel>(initial.level);
+  const [dataset, setDataset] = useState<Dataset>(initial.dataset);
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [windowRange, setWindowRange] = useState<{ start?: string | null; end?: string | null }>({});
@@ -90,16 +137,22 @@ export default function Rankings() {
   const [servingStale, setServingStale] = useState(false);
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initial.q);
   const [searchTotal, setSearchTotal] = useState<number | undefined>();
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sort + pagination
-  const [sortKey, setSortKey] = useState<SortKey>('rank');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [sortKey, setSortKey] = useState<SortKey>(initial.sortKey);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection);
+  const [page, setPage] = useState(initial.page);
+  const [pageSize, setPageSize] = useState(initial.pageSize);
+
+  // Compare mode: 2027 cycle vs sample dataset, side by side
+  const [compare, setCompare] = useState(initial.compare);
+  const [compareData, setCompareData] = useState<RankEntry[] | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   // Find My Ranking state
   const [foundMe, setFoundMe] = useState<RankEntry | null>(null);
@@ -108,6 +161,9 @@ export default function Rankings() {
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
   const cacheKey = `rankings:v1:${dataset}:${level}`;
+  const otherDataset: Dataset = dataset === 'cycle' ? 'sample' : 'cycle';
+  const datasetLabel = (d: Dataset) => (d === 'cycle' ? '2027 Cycle' : 'Sample Data');
+
 
   const applyPayload = useCallback((payload: RankingsPayload) => {
     setData(payload.data);
@@ -172,16 +228,30 @@ export default function Rankings() {
     [level, dataset, cacheKey, applyPayload]
   );
 
+  const firstLoad = useRef(true);
+  const firstPageReset = useRef(true);
+
   // Stale-while-revalidate on level/dataset change
   useEffect(() => {
-    setSearchQuery('');
-    setFoundMe(null);
-    setSearchTotal(undefined);
-    setPage(1);
-    setSortKey('rank');
-    setSortDirection('asc');
-    setServingStale(false);
-    setCachedAt(null);
+    if (firstLoad.current) {
+      // Honour URL-provided view state on first load instead of resetting it.
+      firstLoad.current = false;
+      const q = initial.q.trim();
+      if (q) {
+        setIsSearching(true);
+        fetchRankings({ search: q });
+        return;
+      }
+    } else {
+      setSearchQuery('');
+      setFoundMe(null);
+      setSearchTotal(undefined);
+      setPage(1);
+      setSortKey('rank');
+      setSortDirection('asc');
+      setServingStale(false);
+      setCachedAt(null);
+    }
 
     const cached = readCache<RankingsPayload>(cacheKey);
     if (cached && !cached.isExpired) {
@@ -193,12 +263,62 @@ export default function Rankings() {
       return;
     }
     fetchRankings();
-  }, [level, dataset, cacheKey, fetchRankings, applyPayload]);
+  }, [level, dataset, cacheKey, fetchRankings, applyPayload, initial.q]);
 
+  // Compare mode pulls the counterpart dataset for the same level.
+  useEffect(() => {
+    if (!compare) {
+      setCompareData(null);
+      setCompareError(null);
+      return;
+    }
+    let cancelled = false;
+    setCompareLoading(true);
+    setCompareError(null);
+    (async () => {
+      try {
+        const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
+          body: { level, dataset: otherDataset, limit: 500, search: '', findMe: '' },
+        });
+        if (fnError) throw fnError;
+        if (res?.error) throw new Error(res.error);
+        if (!cancelled) setCompareData((res?.data ?? []) as RankEntry[]);
+      } catch (err) {
+        console.error('Compare dataset error:', err);
+        if (!cancelled) {
+          setCompareData(null);
+          setCompareError(`Could not load the ${datasetLabel(otherDataset)} standings to compare against.`);
+        }
+      } finally {
+        if (!cancelled) setCompareLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compare, level, otherDataset]);
 
   useEffect(() => {
+    if (firstPageReset.current) {
+      firstPageReset.current = false;
+      return;
+    }
     setPage(1);
   }, [sortKey, sortDirection, pageSize, searchQuery]);
+
+  // Keep the URL in sync so the current view is shareable.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (level !== 'individual') params.set('level', level);
+    if (dataset !== 'cycle') params.set('dataset', dataset);
+    if (sortKey !== 'rank') params.set('sort', sortKey);
+    if (sortDirection !== 'asc') params.set('dir', sortDirection);
+    if (page > 1) params.set('page', String(page));
+    if (pageSize !== 25) params.set('size', String(pageSize));
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (compare) params.set('compare', '1');
+    setSearchParams(params, { replace: true });
+  }, [level, dataset, sortKey, sortDirection, page, pageSize, searchQuery, compare, setSearchParams]);
+
 
   // Debounced search
   const handleSearchChange = (value: string) => {
@@ -263,6 +383,81 @@ export default function Rankings() {
     });
   const sampleRangeLabel =
     windowRange.start && windowRange.end ? `${fmt(windowRange.start)} – ${fmt(windowRange.end)}` : 'all logged activity';
+
+  // entityId → counterpart entry from the other dataset (compare mode)
+  const compareMap = useMemo(() => {
+    const map = new Map<string, RankEntry>();
+    (compareData ?? []).forEach(e => map.set(e.entityId, e));
+    return map;
+  }, [compareData]);
+
+  const comparedCount = useMemo(
+    () => (compareData ? sorted.filter(e => compareMap.has(e.entityId)).length : 0),
+    [compareData, compareMap, sorted]
+  );
+
+  const handleShareLink = async () => {
+    const url = await copyCurrentViewLink();
+    toast(
+      url
+        ? { title: 'Link copied', description: 'This exact rankings view — filters, sort, and page — is on your clipboard.' }
+        : { title: 'Could not copy link', description: 'Copy the address bar URL manually to share this view.', variant: 'destructive' }
+    );
+  };
+
+  const handleExportCsv = () => {
+    const componentKeys = ['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])];
+    const headers = [
+      'Rank', 'Name', 'Unit', ...componentKeys.map(c => COMPONENT_LABELS[c]), 'Total Score',
+    ];
+    if (compare) {
+      headers.push(
+        `${datasetLabel(otherDataset)} Rank`,
+        `${datasetLabel(otherDataset)} Score`,
+        'Rank Change',
+        'Score Change'
+      );
+    }
+
+    const componentsOf = (e: RankEntry) => [
+      e.componentA, e.componentB, e.componentC, e.componentD, e.componentE,
+      ...(hasF ? [e.componentF ?? ''] : []),
+    ];
+
+    const rows = sorted.map(e => {
+      const row: (string | number)[] = [
+        e.finalRank,
+        e.entityName,
+        (e.metadata?.unit as string) ?? '',
+        ...componentsOf(e),
+        e.totalScore,
+      ];
+      if (compare) {
+        const other = compareMap.get(e.entityId);
+        row.push(
+          other ? other.finalRank : '',
+          other ? other.totalScore : '',
+          other ? e.finalRank - other.finalRank : '',
+          other ? e.totalScore - other.totalScore : ''
+        );
+      }
+      return row;
+    });
+
+    const meta = [
+      [`DEFIT ${level} rankings — ${datasetLabel(dataset)}`],
+      [dataset === 'cycle' ? `Scoring window: ${CHALLENGE_DATE_RANGE}` : `Sample window: ${sampleRangeLabel}`],
+      [`Sorted by: ${SORT_LABELS[sortKey]} (${sortDirection === 'asc' ? 'best first' : 'worst first'})`],
+      [isSearchActive ? `Filter: "${searchQuery.trim()}"` : 'Filter: none'],
+      [`Rows exported: ${rows.length}`],
+      [`Exported: ${new Date().toLocaleString()}`],
+      [],
+    ];
+
+    const csv = `${buildCsv(meta[0] as string[], meta.slice(1))}\r\n${buildCsv(headers, rows)}`;
+    downloadCsv(`defit-rankings-${level}-${dataset}-${csvTimestamp()}.csv`, csv);
+    toast({ title: 'Export ready', description: `${rows.length} row${rows.length === 1 ? '' : 's'} downloaded as CSV.` });
+  };
 
 
   return (
@@ -437,6 +632,28 @@ export default function Rankings() {
                 {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 Refresh
               </Button>
+              <Button
+                variant={compare ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompare(c => !c)}
+                aria-pressed={compare}
+              >
+                <Columns3 className="w-4 h-4 mr-2" />
+                Compare datasets
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                disabled={loading || sorted.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShareLink}>
+                <Link2 className="w-4 h-4 mr-2" />
+                Copy share link
+              </Button>
               {cachedAt && (
                 <span
                   className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -448,6 +665,29 @@ export default function Rankings() {
                 </span>
               )}
             </div>
+
+            {/* Compare mode banner */}
+            {compare && (
+              <div className="mb-6 p-4 rounded-xl bg-secondary/40 border border-border" aria-live="polite">
+                <div className="flex items-start gap-3">
+                  <Columns3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-heading font-bold">
+                      Compare: {datasetLabel(dataset)} vs {datasetLabel(otherDataset)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {compareLoading
+                        ? `Loading ${datasetLabel(otherDataset)} standings…`
+                        : compareError
+                          ? compareError
+                          : `Each row shows the same participant in both datasets. Change columns are ${datasetLabel(dataset)} minus ${datasetLabel(otherDataset)} — green means better (lower) here. ${comparedCount} of ${sorted.length} matched.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
 
 
             {/* Found Me Banner */}
@@ -590,13 +830,27 @@ export default function Rankings() {
                             <TableRow className="border-border hover:bg-transparent">
                               <TableHead className="w-16">Rank</TableHead>
                               <TableHead>Name</TableHead>
-                              <TableHead className="text-center">Cardio</TableHead>
-                              <TableHead className="text-center">Resistance</TableHead>
-                              <TableHead className="text-center">HIIT</TableHead>
-                              <TableHead className="text-center">TMAR-M</TableHead>
-                              <TableHead className="text-center">Consistency</TableHead>
-                              {hasF && <TableHead className="text-center">Completion</TableHead>}
-                              <TableHead className="text-center font-bold">Total</TableHead>
+                              {compare ? (
+                                <>
+                                  <TableHead className="text-center">{datasetLabel(dataset)} Rank</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(dataset)} Score</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(otherDataset)} Rank</TableHead>
+                                  <TableHead className="text-center">{datasetLabel(otherDataset)} Score</TableHead>
+                                  <TableHead className="text-center">Rank Δ</TableHead>
+                                  <TableHead className="text-center font-bold">Score Δ</TableHead>
+                                </>
+                              ) : (
+                                <>
+                                  <TableHead className="text-center">Cardio</TableHead>
+                                  <TableHead className="text-center">Resistance</TableHead>
+                                  <TableHead className="text-center">HIIT</TableHead>
+                                  <TableHead className="text-center">TMAR-M</TableHead>
+                                  <TableHead className="text-center">Consistency</TableHead>
+                                  {hasF && <TableHead className="text-center">Completion</TableHead>}
+                                  <TableHead className="text-center font-bold">Total</TableHead>
+                                </>
+                              )}
+
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -632,13 +886,47 @@ export default function Rankings() {
                                       {isMe && <Badge variant="outline" className="text-xs border-primary/30 text-primary">You</Badge>}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentA}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentB}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentC}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentD}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentE}</TableCell>
-                                  {hasF && <TableCell className="text-center font-mono">{entry.componentF ?? '—'}</TableCell>}
-                                  <TableCell className="text-center font-heading font-bold text-primary">{entry.totalScore}</TableCell>
+                                  {compare ? (
+                                    <>
+                                      <TableCell className="text-center font-mono">{entry.finalRank}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.totalScore}</TableCell>
+                                      <TableCell className="text-center font-mono text-muted-foreground">
+                                        {compareMap.get(entry.entityId)?.finalRank ?? '—'}
+                                      </TableCell>
+                                      <TableCell className="text-center font-mono text-muted-foreground">
+                                        {compareMap.get(entry.entityId)?.totalScore ?? '—'}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Delta
+                                          value={
+                                            compareMap.has(entry.entityId)
+                                              ? entry.finalRank - compareMap.get(entry.entityId)!.finalRank
+                                              : null
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Delta
+                                          value={
+                                            compareMap.has(entry.entityId)
+                                              ? entry.totalScore - compareMap.get(entry.entityId)!.totalScore
+                                              : null
+                                          }
+                                        />
+                                      </TableCell>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <TableCell className="text-center font-mono">{entry.componentA}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentB}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentC}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentD}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentE}</TableCell>
+                                      {hasF && <TableCell className="text-center font-mono">{entry.componentF ?? '—'}</TableCell>}
+                                      <TableCell className="text-center font-heading font-bold text-primary">{entry.totalScore}</TableCell>
+                                    </>
+                                  )}
+
                                 </TableRow>
                               );
                             })}
@@ -673,18 +961,49 @@ export default function Rankings() {
                                   {entry.totalScore}
                                 </Badge>
                               </div>
-                              <div className="grid grid-cols-3 gap-2 text-xs">
-                                {['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])].map(c => (
-                                  <div key={c} className="text-center bg-secondary/50 rounded p-1.5">
-                                    <p className="text-muted-foreground">{COMPONENT_LABELS[c]}</p>
-                                    <p className="font-mono font-bold">
-                                      {c === 'A' ? entry.componentA : c === 'B' ? entry.componentB :
-                                       c === 'C' ? entry.componentC : c === 'D' ? entry.componentD :
-                                       c === 'E' ? entry.componentE : entry.componentF ?? '—'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
+                              {compare ? (
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {(() => {
+                                    const other = compareMap.get(entry.entityId);
+                                    return (
+                                      <>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">{datasetLabel(dataset)}</p>
+                                          <p className="font-mono font-bold">#{entry.finalRank} · {entry.totalScore} pts</p>
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">{datasetLabel(otherDataset)}</p>
+                                          <p className="font-mono font-bold">
+                                            {other ? `#${other.finalRank} · ${other.totalScore} pts` : 'not ranked'}
+                                          </p>
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">Rank Δ</p>
+                                          <Delta value={other ? entry.finalRank - other.finalRank : null} />
+                                        </div>
+                                        <div className="text-center bg-secondary/50 rounded p-1.5">
+                                          <p className="text-muted-foreground">Score Δ</p>
+                                          <Delta value={other ? entry.totalScore - other.totalScore : null} />
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                  {['A', 'B', 'C', 'D', 'E', ...(hasF ? ['F'] : [])].map(c => (
+                                    <div key={c} className="text-center bg-secondary/50 rounded p-1.5">
+                                      <p className="text-muted-foreground">{COMPONENT_LABELS[c]}</p>
+                                      <p className="font-mono font-bold">
+                                        {c === 'A' ? entry.componentA : c === 'B' ? entry.componentB :
+                                         c === 'C' ? entry.componentC : c === 'D' ? entry.componentD :
+                                         c === 'E' ? entry.componentE : entry.componentF ?? '—'}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
                             </div>
                           );
                         })}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,9 +42,16 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Download,
+  Link2,
+  CheckCircle2,
+  Timer,
 } from 'lucide-react';
 import { CHALLENGE_MINIMUMS } from '@/types/workout';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
+import { copyCurrentViewLink } from '@/lib/shareView';
+import { useToast } from '@/hooks/use-toast';
 
 type SortMetric = 'overall' | 'cardio' | 'strength' | 'hiit' | 'tmarm' | 'name';
 type SortDirection = 'desc' | 'asc';
@@ -85,6 +92,13 @@ const METRIC_LABELS: Record<SortMetric, string> = {
 
 const CACHE_KEY = 'leaderboard:v1';
 
+const AUTO_REFRESH_OPTIONS = [
+  { value: '0', label: 'Auto-refresh off', ms: 0 },
+  { value: '2', label: 'Every 2 minutes', ms: 2 * 60_000 },
+  { value: '5', label: 'Every 5 minutes', ms: 5 * 60_000 },
+  { value: '10', label: 'Every 10 minutes', ms: 10 * 60_000 },
+];
+
 interface CachedPayload {
   entries: LeaderboardEntry[];
   minimums: Minimums;
@@ -111,6 +125,23 @@ function normalize(data: unknown): CachedPayload {
 }
 
 export default function Leaderboard() {
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial view state is read from the URL so a shared link reproduces the view.
+  const initial = useRef({
+    sortMetric: (searchParams.get('sort') && searchParams.get('sort')! in METRIC_LABELS
+      ? searchParams.get('sort')
+      : 'overall') as SortMetric,
+    sortDirection: (searchParams.get('dir') === 'asc' ? 'asc' : 'desc') as SortDirection,
+    query: searchParams.get('q') ?? '',
+    page: Math.max(1, Number(searchParams.get('page')) || 1),
+    pageSize: PAGE_SIZES.includes(Number(searchParams.get('size'))) ? Number(searchParams.get('size')) : 25,
+    auto: AUTO_REFRESH_OPTIONS.some(o => o.value === searchParams.get('auto'))
+      ? (searchParams.get('auto') as string)
+      : '0',
+  }).current;
+
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [minimums, setMinimums] = useState<Minimums>(CHALLENGE_MINIMUMS);
   const [loading, setLoading] = useState(true);
@@ -118,15 +149,21 @@ export default function Leaderboard() {
   const [error, setError] = useState<string | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
   const [servingStale, setServingStale] = useState(false);
-  const [sortMetric, setSortMetric] = useState<SortMetric>('overall');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [sortMetric, setSortMetric] = useState<SortMetric>(initial.sortMetric);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection);
+  const [query, setQuery] = useState(initial.query);
+  const [page, setPage] = useState(initial.page);
+  const [pageSize, setPageSize] = useState(initial.pageSize);
 
-  const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean } = {}) => {
-    if (opts.background) setRefreshing(true);
-    else if (opts.isRefresh) setRefreshing(true);
+  // Auto-refresh
+  const [autoRefresh, setAutoRefresh] = useState(initial.auto);
+  const [lastAutoAt, setLastAutoAt] = useState<number | null>(null);
+  const [changedAt, setChangedAt] = useState<number | null>(null);
+  const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
+  const firstPageReset = useRef(true);
+
+  const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean; auto?: boolean } = {}) => {
+    if (opts.background || opts.isRefresh || opts.auto) setRefreshing(true);
     else setLoading(true);
     if (!opts.background) setError(null);
     try {
@@ -135,11 +172,18 @@ export default function Leaderboard() {
       if (data?.error) throw new Error(data.error);
 
       const payload = normalize(data);
-      setLeaderboard(payload.entries);
+      setLeaderboard((prev) => {
+        if (opts.isRefresh || opts.background || opts.auto) {
+          const changed = JSON.stringify(prev) !== JSON.stringify(payload.entries);
+          setChangedAt(changed ? Date.now() : null);
+        }
+        return payload.entries;
+      });
       setMinimums(payload.minimums);
       writeCache<CachedPayload>(CACHE_KEY, payload);
       setCachedAt(Date.now());
       setServingStale(false);
+      if (opts.auto) setLastAutoAt(Date.now());
       setError(null);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
@@ -256,10 +300,94 @@ export default function Leaderboard() {
   const pageStart = (currentPage - 1) * pageSize;
   const pageEntries = processed.slice(pageStart, pageStart + pageSize);
 
-  // Reset to first page whenever the view changes
+  // Reset to first page whenever the view changes (but keep a shared link's page)
   useEffect(() => {
+    if (firstPageReset.current) {
+      firstPageReset.current = false;
+      return;
+    }
     setPage(1);
   }, [query, sortMetric, sortDirection, pageSize]);
+
+  // Keep the URL in sync so the current view is shareable.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (sortMetric !== 'overall') params.set('sort', sortMetric);
+    if (sortDirection !== 'desc') params.set('dir', sortDirection);
+    if (query.trim()) params.set('q', query.trim());
+    if (page > 1) params.set('page', String(page));
+    if (pageSize !== 25) params.set('size', String(pageSize));
+    if (autoRefresh !== '0') params.set('auto', autoRefresh);
+    setSearchParams(params, { replace: true });
+  }, [sortMetric, sortDirection, query, page, pageSize, autoRefresh, setSearchParams]);
+
+  // Optional auto-refresh on a fixed interval, with a visible countdown.
+  const intervalMs = AUTO_REFRESH_OPTIONS.find(o => o.value === autoRefresh)?.ms ?? 0;
+  useEffect(() => {
+    if (!intervalMs) {
+      setNextRefreshIn(null);
+      return;
+    }
+    let remaining = Math.round(intervalMs / 1000);
+    setNextRefreshIn(remaining);
+    const tick = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) remaining = Math.round(intervalMs / 1000);
+      setNextRefreshIn(remaining);
+    }, 1000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'hidden') fetchLeaderboard({ auto: true });
+    }, intervalMs);
+    return () => {
+      clearInterval(tick);
+      clearInterval(timer);
+    };
+  }, [intervalMs, fetchLeaderboard]);
+
+  const handleShareLink = async () => {
+    const url = await copyCurrentViewLink();
+    toast(
+      url
+        ? { title: 'Link copied', description: 'This exact leaderboard view — search, sort, page size, and page — is on your clipboard.' }
+        : { title: 'Could not copy link', description: 'Copy the address bar URL manually to share this view.', variant: 'destructive' }
+    );
+  };
+
+  const handleExportCsv = () => {
+    const headers = [
+      'Rank', 'Participant', 'Unit',
+      'Cardio Miles', `Cardio % of ${minimums.cardioMiles} mi`,
+      'Strength Lbs', `Strength % of ${minimums.strengthLbs} lbs`,
+      'HIIT Minutes', `HIIT % of ${minimums.hiitMinutes} min`,
+      'TMAR-M Minutes', `TMAR-M % of ${minimums.tmarmMinutes} min`,
+      'Overall Completion %',
+    ];
+    const rows = processed.map((e) => [
+      e.displayRank,
+      e.name,
+      e.unit ?? '',
+      e.cardioMiles.toFixed(1),
+      e.cardioCompletion.toFixed(1),
+      Math.round(e.strengthLbs),
+      e.strengthCompletion.toFixed(1),
+      Math.round(e.hiitMinutes),
+      e.hiitCompletion.toFixed(1),
+      Math.round(e.tmarmMinutes),
+      e.tmarmCompletion.toFixed(1),
+      e.overallCompletion.toFixed(1),
+    ]);
+    const meta = [
+      ['DEFIT 2027 Leaderboard'],
+      [`Sorted by: ${METRIC_LABELS[sortMetric]} (${sortDirection === 'desc' ? 'high to low' : 'low to high'})`],
+      [query.trim() ? `Filter: "${query.trim()}"` : 'Filter: none'],
+      [`Rows exported: ${rows.length}`],
+      [`Exported: ${new Date().toLocaleString()}`],
+      [],
+    ];
+    const csv = `${buildCsv(meta[0] as string[], meta.slice(1))}\r\n${buildCsv(headers, rows)}`;
+    downloadCsv(`defit-leaderboard-${csvTimestamp()}.csv`, csv);
+    toast({ title: 'Export ready', description: `${rows.length} row${rows.length === 1 ? '' : 's'} downloaded as CSV.` });
+  };
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -475,6 +603,34 @@ export default function Leaderboard() {
                   Refresh
                 </Button>
 
+                <Select value={autoRefresh} onValueChange={setAutoRefresh}>
+                  <SelectTrigger className="w-[180px] bg-secondary" aria-label="Auto-refresh interval">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {AUTO_REFRESH_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCsv}
+                  disabled={loading || processed.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+
+                <Button variant="outline" size="sm" onClick={handleShareLink}>
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Copy share link
+                </Button>
+
                 {cachedAt && (
                   <span
                     className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -486,6 +642,33 @@ export default function Leaderboard() {
                   </span>
                 )}
               </div>
+
+              {/* Auto-refresh status */}
+              {intervalMs > 0 && (
+                <div className="flex flex-wrap items-center gap-2 text-xs" aria-live="polite">
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <Timer className="w-3.5 h-3.5" />
+                    Auto-refreshing {AUTO_REFRESH_OPTIONS.find((o) => o.value === autoRefresh)?.label.replace('Every', 'every').toLowerCase()}
+                    {nextRefreshIn !== null && ` · next check in ${Math.floor(nextRefreshIn / 60)}:${String(nextRefreshIn % 60).padStart(2, '0')}`}
+                  </span>
+                  {refreshing ? (
+                    <span className="inline-flex items-center gap-1.5 text-primary">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Checking for new scores…
+                    </span>
+                  ) : changedAt ? (
+                    <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      New standings loaded {formatCacheAge(changedAt)}
+                    </span>
+                  ) : lastAutoAt ? (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Checked {formatCacheAge(lastAutoAt)} — no changes, showing cached standings
+                    </span>
+                  ) : null}
+                </div>
+              )}
 
             </div>
           </div>
