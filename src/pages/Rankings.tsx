@@ -608,6 +608,28 @@ export default function Rankings() {
                 {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 Refresh
               </Button>
+              <Button
+                variant={compare ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompare(c => !c)}
+                aria-pressed={compare}
+              >
+                <Columns3 className="w-4 h-4 mr-2" />
+                Compare datasets
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                disabled={loading || sorted.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShareLink}>
+                <Link2 className="w-4 h-4 mr-2" />
+                Copy share link
+              </Button>
               {cachedAt && (
                 <span
                   className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -619,6 +641,29 @@ export default function Rankings() {
                 </span>
               )}
             </div>
+
+            {/* Compare mode banner */}
+            {compare && (
+              <div className="mb-6 p-4 rounded-xl bg-secondary/40 border border-border" aria-live="polite">
+                <div className="flex items-start gap-3">
+                  <Columns3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-heading font-bold">
+                      Compare: {datasetLabel(dataset)} vs {datasetLabel(otherDataset)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {compareLoading
+                        ? `Loading ${datasetLabel(otherDataset)} standings…`
+                        : compareError
+                          ? compareError
+                          : `Each row shows the same participant in both datasets. Change columns are ${datasetLabel(dataset)} minus ${datasetLabel(otherDataset)} — green means better (lower) here. ${comparedCount} of ${sorted.length} matched.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
 
 
             {/* Found Me Banner */}
