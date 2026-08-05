@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,9 +42,16 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Download,
+  Link2,
+  CheckCircle2,
+  Timer,
 } from 'lucide-react';
 import { CHALLENGE_MINIMUMS } from '@/types/workout';
 import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import { buildCsv, csvTimestamp, downloadCsv } from '@/lib/exportCsv';
+import { copyCurrentViewLink } from '@/lib/shareView';
+import { useToast } from '@/hooks/use-toast';
 
 type SortMetric = 'overall' | 'cardio' | 'strength' | 'hiit' | 'tmarm' | 'name';
 type SortDirection = 'desc' | 'asc';
@@ -85,6 +92,13 @@ const METRIC_LABELS: Record<SortMetric, string> = {
 
 const CACHE_KEY = 'leaderboard:v1';
 
+const AUTO_REFRESH_OPTIONS = [
+  { value: '0', label: 'Auto-refresh off', ms: 0 },
+  { value: '2', label: 'Every 2 minutes', ms: 2 * 60_000 },
+  { value: '5', label: 'Every 5 minutes', ms: 5 * 60_000 },
+  { value: '10', label: 'Every 10 minutes', ms: 10 * 60_000 },
+];
+
 interface CachedPayload {
   entries: LeaderboardEntry[];
   minimums: Minimums;
@@ -111,6 +125,23 @@ function normalize(data: unknown): CachedPayload {
 }
 
 export default function Leaderboard() {
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial view state is read from the URL so a shared link reproduces the view.
+  const initial = useRef({
+    sortMetric: (searchParams.get('sort') && searchParams.get('sort')! in METRIC_LABELS
+      ? searchParams.get('sort')
+      : 'overall') as SortMetric,
+    sortDirection: (searchParams.get('dir') === 'asc' ? 'asc' : 'desc') as SortDirection,
+    query: searchParams.get('q') ?? '',
+    page: Math.max(1, Number(searchParams.get('page')) || 1),
+    pageSize: PAGE_SIZES.includes(Number(searchParams.get('size'))) ? Number(searchParams.get('size')) : 25,
+    auto: AUTO_REFRESH_OPTIONS.some(o => o.value === searchParams.get('auto'))
+      ? (searchParams.get('auto') as string)
+      : '0',
+  }).current;
+
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [minimums, setMinimums] = useState<Minimums>(CHALLENGE_MINIMUMS);
   const [loading, setLoading] = useState(true);
@@ -118,11 +149,18 @@ export default function Leaderboard() {
   const [error, setError] = useState<string | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
   const [servingStale, setServingStale] = useState(false);
-  const [sortMetric, setSortMetric] = useState<SortMetric>('overall');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [sortMetric, setSortMetric] = useState<SortMetric>(initial.sortMetric);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection);
+  const [query, setQuery] = useState(initial.query);
+  const [page, setPage] = useState(initial.page);
+  const [pageSize, setPageSize] = useState(initial.pageSize);
+
+  // Auto-refresh
+  const [autoRefresh, setAutoRefresh] = useState(initial.auto);
+  const [lastAutoAt, setLastAutoAt] = useState<number | null>(null);
+  const [changedAt, setChangedAt] = useState<number | null>(null);
+  const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
+  const firstPageReset = useRef(true);
 
   const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean } = {}) => {
     if (opts.background) setRefreshing(true);
