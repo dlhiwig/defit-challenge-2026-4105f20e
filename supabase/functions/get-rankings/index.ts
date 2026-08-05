@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     const { data: configRows } = await supabase.from('challenge_config').select('key, value')
     const cfg: Record<string, string> = {}
     configRows?.forEach(r => { cfg[r.key] = r.value })
-    const challengeStart = new Date(cfg.challenge_start_date || '2026-01-12')
+    const challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
     const scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
 
     // Fetch all data in parallel

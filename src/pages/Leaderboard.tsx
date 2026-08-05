@@ -89,10 +89,10 @@ export default function Leaderboard() {
       },
       "about": {
         "@type": "SportsEvent",
-        "name": "Double Eagle Fitness Challenge 2026",
+        "name": "Double Eagle Fitness Challenge 2027",
         "description": "A 10-week fitness challenge for Army Reserve soldiers and supporters.",
-        "startDate": "2026-01-12",
-        "endDate": "2026-03-22",
+        "startDate": "2027-01-11",
+        "endDate": "2027-03-21",
       },
     };
     const script = document.createElement("script");

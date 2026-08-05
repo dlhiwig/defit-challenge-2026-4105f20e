@@ -371,7 +371,7 @@ const Terms = () => {
 
             <div className="text-center text-muted-foreground text-sm mt-12 pt-8 border-t border-border">
               <p>
-                © 2026 Black Eagle Project, Inc. All rights reserved.
+                © 2027 Black Eagle Project, Inc. All rights reserved.
               </p>
               <p className="mt-2">
                 DEFIT™ and the Double Eagle emblem are trademarks of Black Eagle Project, Inc.

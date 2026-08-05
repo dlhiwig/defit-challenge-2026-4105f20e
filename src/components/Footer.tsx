@@ -102,7 +102,7 @@ const Footer = () => {
           </p>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-muted-foreground text-sm">
-              © 2026 Double Eagle Fitness Challenge. All rights reserved.
+              © 2027 Double Eagle Fitness Challenge. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-muted-foreground text-sm">
               <Link

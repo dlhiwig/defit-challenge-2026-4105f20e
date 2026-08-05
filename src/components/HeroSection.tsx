@@ -24,7 +24,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse-glow" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              12 Jan – 22 Mar 2026
+              11 Jan – 21 Mar 2027
             </span>
           </div>
 

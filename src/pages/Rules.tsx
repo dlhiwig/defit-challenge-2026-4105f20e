@@ -20,10 +20,10 @@ const Rules = () => {
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              DEFIT 2026 Fitness Challenge <span className="text-gradient">Rules</span>
+              DEFIT 2027 Fitness Challenge <span className="text-gradient">Rules</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              These rules govern participation in the DEFIT 2026 Fitness Challenge hosted in support of wellness and readiness.
+              These rules govern participation in the DEFIT 2027 Fitness Challenge hosted in support of wellness and readiness.
               If there is any inconsistency with other materials, <strong className="text-foreground">this web page controls</strong>.
             </p>
           </div>
@@ -75,7 +75,7 @@ const Rules = () => {
             </h2>
             <div className="space-y-4 text-muted-foreground">
               <p>
-                The <strong className="text-foreground">DEFIT 2026 Fitness Challenge</strong> is a structured, self-reported fitness event centered on four pillars:
+                The <strong className="text-foreground">DEFIT 2027 Fitness Challenge</strong> is a structured, self-reported fitness event centered on four pillars:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li><strong className="text-foreground">Cardio</strong> (Miles)</li>
@@ -135,7 +135,7 @@ const Rules = () => {
             </h2>
             <div className="space-y-6 text-muted-foreground">
               <p>
-                To be considered a <strong className="text-foreground">completer</strong> of the DEFIT 2026 Challenge, you are expected to strive toward the following <strong className="text-foreground">minimum targets</strong> during the official challenge period:
+                To be considered a <strong className="text-foreground">completer</strong> of the DEFIT 2027 Challenge, you are expected to strive toward the following <strong className="text-foreground">minimum targets</strong> during the official challenge period:
               </p>
               
               <div className="grid md:grid-cols-2 gap-6">
@@ -187,7 +187,7 @@ const Rules = () => {
             </h2>
             <div className="space-y-6 text-muted-foreground">
               <p>
-                Leaderboard rankings in the DEFIT 2026 Challenge are based on a <strong className="text-foreground">weighted composite score</strong> that combines all four categories.
+                Leaderboard rankings in the DEFIT 2027 Challenge are based on a <strong className="text-foreground">weighted composite score</strong> that combines all four categories.
               </p>
               
               <div>
@@ -264,7 +264,7 @@ const Rules = () => {
               </p>
               
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">5.1 Default Conversion Rules for 2026</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">5.1 Default Conversion Rules for 2027</h3>
                 <div className="space-y-4">
                   <div className="bg-card/50 rounded-lg p-4 border border-border/50">
                     <h4 className="font-semibold text-foreground">Run / Walk / Ruck</h4>
@@ -300,7 +300,7 @@ const Rules = () => {
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">5.3 Changes to Conversion Rules</h3>
                 <p>
-                  These conversions are the standard for the 2026 Challenge. Organizers may correct obvious unit mistakes and may clarify or refine conversions if needed. Any changes will be announced in-app or on the website.
+                  These conversions are the standard for the 2027 Challenge. Organizers may correct obvious unit mistakes and may clarify or refine conversions if needed. Any changes will be announced in-app or on the website.
                 </p>
               </div>
             </div>
@@ -512,7 +512,7 @@ const Rules = () => {
             </h2>
             <div className="space-y-4 text-muted-foreground">
               <p>
-                By creating an account, logging any activity, or otherwise participating in the <strong className="text-foreground">DEFIT 2026 Fitness Challenge</strong>, you confirm that:
+                By creating an account, logging any activity, or otherwise participating in the <strong className="text-foreground">DEFIT 2027 Fitness Challenge</strong>, you confirm that:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>You have read and understood these Rules</li>
