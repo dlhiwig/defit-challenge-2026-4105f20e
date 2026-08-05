@@ -103,6 +103,27 @@ const METRIC_LABELS: Record<SortMetric, string> = {
 };
 
 const CACHE_KEY = 'leaderboard:v1';
+/** Last standings snapshot, used to compute Top Movers on the next refresh. */
+const SNAPSHOT_KEY = 'leaderboard:snapshot:v1';
+
+/** Friendly labels for saved-view descriptions. */
+const VIEW_LABELS: Record<string, (value: string) => string> = {
+  sort: v => `sorted by ${METRIC_LABELS[v as SortMetric] ?? v}`,
+  dir: v => (v === 'asc' ? 'low to high' : 'high to low'),
+  q: v => `search “${v}”`,
+  page: v => `page ${v}`,
+  size: v => `${v} per page`,
+  auto: v => `auto-refresh ${v} min`,
+};
+
+interface Diagnostics {
+  at: number;
+  ok: boolean;
+  status: number | null;
+  message: string;
+  attempts: number;
+}
+
 
 const AUTO_REFRESH_OPTIONS = [
   { value: '0', label: 'Auto-refresh off', ms: 0 },
