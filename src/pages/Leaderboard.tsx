@@ -195,10 +195,19 @@ export default function Leaderboard() {
   const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
   const firstPageReset = useRef(true);
 
+  // Top Movers + service diagnostics
+  const [movers, setMovers] = useState<MoversResult | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const attempts = useRef(0);
+
+  // Participant profile drawer
+  const [profileFor, setProfileFor] = useState<{ userId: string; name: string; unit: string | null } | null>(null);
+
   const fetchLeaderboard = useCallback(async (opts: { isRefresh?: boolean; background?: boolean; auto?: boolean } = {}) => {
     if (opts.background || opts.isRefresh || opts.auto) setRefreshing(true);
     else setLoading(true);
     if (!opts.background) setError(null);
+    attempts.current += 1;
     try {
       const { data, error: fnError } = await supabase.functions.invoke('get-leaderboard');
       if (fnError) throw fnError;
@@ -218,8 +227,42 @@ export default function Leaderboard() {
       setServingStale(false);
       if (opts.auto) setLastAutoAt(Date.now());
       setError(null);
+      attempts.current = 0;
+      setDiagnostics({
+        at: Date.now(),
+        ok: true,
+        status: 200,
+        message: `get-leaderboard returned ${payload.entries.length} participants`,
+        attempts: 0,
+      });
+
+      // Top Movers: diff against the last snapshot, then store the new one.
+      const snapshotEntries = payload.entries.map((e) => ({
+        userId: e.userId,
+        name: e.name,
+        unit: e.unit,
+        rank: e.rank,
+        overallCompletion: e.overallCompletion,
+      }));
+      const previous = readCache<MoverSnapshot>(SNAPSHOT_KEY, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
+      const result = computeMovers(snapshotEntries, previous?.data ?? null);
+      const snapshotChanged =
+        !previous || JSON.stringify(previous.data.entries) !== JSON.stringify(snapshotEntries);
+      if (result && snapshotChanged) setMovers(result);
+      if (snapshotChanged) writeCache<MoverSnapshot>(SNAPSHOT_KEY, toSnapshot(snapshotEntries));
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? Number((err as { status?: number }).status) || null
+          : (err as { context?: { status?: number } })?.context?.status ?? null;
+      setDiagnostics({
+        at: Date.now(),
+        ok: false,
+        status,
+        message: err instanceof Error ? err.message : 'Unknown network error',
+        attempts: attempts.current,
+      });
       // Resilience: fall back to the last known standings rather than an error wall.
       const cached = readCache<CachedPayload>(CACHE_KEY, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
       if (cached) {
@@ -237,6 +280,7 @@ export default function Leaderboard() {
       setRefreshing(false);
     }
   }, []);
+
 
   // Stale-while-revalidate: paint cached standings instantly, refresh in background.
   useEffect(() => {
