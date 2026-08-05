@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          cycle: string
+          id: string
+          is_published: boolean
+          milestone_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          cycle?: string
+          id?: string
+          is_published?: boolean
+          milestone_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          cycle?: string
+          id?: string
+          is_published?: boolean
+          milestone_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cardio_logs: {
         Row: {
           admin_comment: string | null
@@ -131,6 +167,48 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      defit_registrations: {
+        Row: {
+          command: string | null
+          created_at: string
+          cycle: string
+          email: string
+          email_reminders: boolean
+          full_name: string
+          id: string
+          status: string
+          unit_category: Database["public"]["Enums"]["unit_category"] | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          command?: string | null
+          created_at?: string
+          cycle?: string
+          email: string
+          email_reminders?: boolean
+          full_name: string
+          id?: string
+          status?: string
+          unit_category?: Database["public"]["Enums"]["unit_category"] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          command?: string | null
+          created_at?: string
+          cycle?: string
+          email?: string
+          email_reminders?: boolean
+          full_name?: string
+          id?: string
+          status?: string
+          unit_category?: Database["public"]["Enums"]["unit_category"] | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -253,6 +331,51 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: []
+      }
+      milestone_reminder_log: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          registration_id: string
+          status: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          registration_id: string
+          status?: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          registration_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_reminder_log_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_reminder_log_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "defit_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mission_phases: {
         Row: {
