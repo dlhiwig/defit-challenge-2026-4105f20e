@@ -474,7 +474,19 @@ export default function Leaderboard() {
                   )}
                   Refresh
                 </Button>
+
+                {cachedAt && (
+                  <span
+                    className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
+                    aria-live="polite"
+                  >
+                    {servingStale
+                      ? `Showing last known standings (${formatCacheAge(cachedAt)}) — service unreachable`
+                      : `Updated ${formatCacheAge(cachedAt)}`}
+                  </span>
+                )}
               </div>
+
             </div>
           </div>
         </div>
