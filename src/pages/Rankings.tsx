@@ -104,6 +104,20 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
   }
 }
 
+/** Friendly labels for saved-view descriptions. */
+const VIEW_LABELS: Record<string, (value: string) => string> = {
+  level: v => `${v} level`,
+  dataset: v => (v === 'sample' ? 'sample data' : '2027 cycle'),
+  sort: v => `sorted by ${SORT_LABELS[v as SortKey] ?? v}`,
+  dir: v => (v === 'asc' ? 'ascending' : 'descending'),
+  q: v => `search “${v}”`,
+  page: v => `page ${v}`,
+  size: v => `${v} per page`,
+  compare: () => 'compare mode on',
+};
+
+
+
 export default function Rankings() {
   const { user } = useAuth();
   const { toast } = useToast();
