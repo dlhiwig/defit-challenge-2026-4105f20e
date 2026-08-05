@@ -862,13 +862,47 @@ export default function Rankings() {
                                       {isMe && <Badge variant="outline" className="text-xs border-primary/30 text-primary">You</Badge>}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentA}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentB}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentC}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentD}</TableCell>
-                                  <TableCell className="text-center font-mono">{entry.componentE}</TableCell>
-                                  {hasF && <TableCell className="text-center font-mono">{entry.componentF ?? '—'}</TableCell>}
-                                  <TableCell className="text-center font-heading font-bold text-primary">{entry.totalScore}</TableCell>
+                                  {compare ? (
+                                    <>
+                                      <TableCell className="text-center font-mono">{entry.finalRank}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.totalScore}</TableCell>
+                                      <TableCell className="text-center font-mono text-muted-foreground">
+                                        {compareMap.get(entry.entityId)?.finalRank ?? '—'}
+                                      </TableCell>
+                                      <TableCell className="text-center font-mono text-muted-foreground">
+                                        {compareMap.get(entry.entityId)?.totalScore ?? '—'}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Delta
+                                          value={
+                                            compareMap.has(entry.entityId)
+                                              ? entry.finalRank - compareMap.get(entry.entityId)!.finalRank
+                                              : null
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Delta
+                                          value={
+                                            compareMap.has(entry.entityId)
+                                              ? entry.totalScore - compareMap.get(entry.entityId)!.totalScore
+                                              : null
+                                          }
+                                        />
+                                      </TableCell>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <TableCell className="text-center font-mono">{entry.componentA}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentB}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentC}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentD}</TableCell>
+                                      <TableCell className="text-center font-mono">{entry.componentE}</TableCell>
+                                      {hasF && <TableCell className="text-center font-mono">{entry.componentF ?? '—'}</TableCell>}
+                                      <TableCell className="text-center font-heading font-bold text-primary">{entry.totalScore}</TableCell>
+                                    </>
+                                  )}
+
                                 </TableRow>
                               );
                             })}
