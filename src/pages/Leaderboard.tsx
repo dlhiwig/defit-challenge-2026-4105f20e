@@ -1014,10 +1014,23 @@ export default function Leaderboard() {
                     {pageEntries.map((entry) => (
                       <div
                         key={entry.userId}
-                        className={`p-4 ${
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View ${entry.name}'s workout history and scoring breakdown`}
+                        onClick={() =>
+                          setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit });
+                          }
+                        }}
+                        className={`p-4 cursor-pointer ${
                           entry.displayRank <= 3 ? getRankBadgeClass(entry.displayRank) : ''
                         }`}
                       >
+
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">{getRankIcon(entry.displayRank)}</div>
                           <div className="flex-1 min-w-0">
