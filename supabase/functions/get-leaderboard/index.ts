@@ -175,12 +175,18 @@ Deno.serve(async (req) => {
         challengeMinimums: CHALLENGE_MINIMUMS,
         completionWeights: COMPLETION_WEIGHTS,
         totalParticipants: rankedData.length,
+        generatedAt: new Date().toISOString(),
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=900',
+        },
         status: 200,
       }
     )
+
 
   } catch (error) {
     console.error('Leaderboard error:', error)
