@@ -47,7 +47,7 @@ const Navbar = () => {
               width={96}
               height={96}
               decoding="async"
-              className="h-10 w-10 shrink-0 object-contain sm:h-14 sm:w-14 md:h-20 md:w-20"
+              className="h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16 md:h-20 md:w-20"
             />
             <span className="text-lg font-heading font-bold text-foreground uppercase tracking-wider hidden sm:block">
               DEFIT 2027 
