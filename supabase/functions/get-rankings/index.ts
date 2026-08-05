@@ -496,13 +496,21 @@ Deno.serve(async (req) => {
     const outputData = searchApplied ? results : results.slice(0, limit)
 
     return new Response(JSON.stringify({
-      level, data: outputData, total: totalRanked,
+      level, dataset, data: outputData, total: totalRanked,
       searchTotal: searchApplied ? results.length : undefined,
       challengeStart: challengeStart.toISOString(), scoringWeeks,
+      datasetStart, datasetEnd,
+      generatedAt: new Date().toISOString(),
       foundMe,
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=900',
+      },
+      status: 200,
     })
+
 
   } catch (error) {
     console.error('Rankings error:', error)
