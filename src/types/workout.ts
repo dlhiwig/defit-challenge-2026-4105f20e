@@ -51,12 +51,12 @@ export interface WorkoutTotals {
   tmarmMinutes: number;
 }
 
-// 10-week challenge minimums (example values - adjust as needed)
+// Official DEFIT 2027 completer minimums (11 Jan – 21 Mar 2027)
 export const CHALLENGE_MINIMUMS: WorkoutTotals = {
-  cardioMiles: 120,      // 12 miles per week average
-  strengthLbs: 50000,    // Total lbs lifted
-  hiitMinutes: 300,      // 30 min/week average
-  tmarmMinutes: 200,     // 20 min/week average
+  cardioMiles: 120,      // 12 cardio miles per week average
+  strengthLbs: 50000,    // Total lbs volume lifted
+  hiitMinutes: 480,      // 48 min/week average
+  tmarmMinutes: 480,     // 48 min/week average
 };
 
 export const CARDIO_TYPE_LABELS: Record<CardioType, string> = {
