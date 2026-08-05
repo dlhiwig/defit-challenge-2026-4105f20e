@@ -18,9 +18,25 @@ import {
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
   RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
+  CalendarDays, FlaskConical,
 } from 'lucide-react';
 import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
+import { readCache, writeCache, formatCacheAge, DEFAULT_TTL_MS } from '@/lib/swrCache';
+import {
+  CHALLENGE_LABEL, CHALLENGE_DATE_RANGE, CHALLENGE_START, CHALLENGE_END,
+  CHALLENGE_WEEKS, cycleStatus,
+} from '@/lib/challenge';
+
+type Dataset = 'cycle' | 'sample';
+
+interface RankingsPayload {
+  data: RankEntry[];
+  total: number;
+  datasetStart?: string | null;
+  datasetEnd?: string | null;
+}
+
 
 type SortKey = 'rank' | 'score' | 'name' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 type SortDirection = 'asc' | 'desc';
