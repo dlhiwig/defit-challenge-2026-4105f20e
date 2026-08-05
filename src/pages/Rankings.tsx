@@ -300,6 +300,52 @@ export default function Rankings() {
         </div>
       </section>
 
+      {/* Dataset toggle */}
+      <section className="pb-6">
+        <div className="container px-4 max-w-4xl mx-auto">
+          <div className="glass rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-start gap-3">
+              {dataset === 'cycle'
+                ? <CalendarDays className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                : <FlaskConical className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />}
+              <div>
+                <p className="text-sm font-heading font-bold">
+                  {dataset === 'cycle' ? `${CHALLENGE_LABEL} scoring cycle` : 'Sample dataset (preview)'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {dataset === 'cycle'
+                    ? `Scoring window ${CHALLENGE_DATE_RANGE} · ${CHALLENGE_WEEKS} weeks`
+                    : `Every log on record, ignoring cycle dates · ${sampleRangeLabel}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex rounded-lg border border-border overflow-hidden self-start" role="group" aria-label="Dataset">
+              <button
+                type="button"
+                onClick={() => setDataset('cycle')}
+                aria-pressed={dataset === 'cycle'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  dataset === 'cycle' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                2027 Cycle
+              </button>
+              <button
+                type="button"
+                onClick={() => setDataset('sample')}
+                aria-pressed={dataset === 'sample'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  dataset === 'sample' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Sample Data
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
       {/* Tabs + Table */}
       <section className="pb-16">
         <div className="container px-4 max-w-5xl mx-auto">
