@@ -325,6 +325,31 @@ Deno.serve(async (req) => {
       hiit: hiitRes.data || [], tmarm: tmarmRes.data || [],
     }
 
+    // ─── SAMPLE DATASET MODE ───
+    // Preview mode: ignore the configured 2027 window and score every log on record.
+    // The window starts at the earliest log (Monday-aligned) and spans all logged weeks.
+    let datasetStart: string | null = null
+    let datasetEnd: string | null = null
+    if (dataset === 'sample') {
+      const dates = [
+        ...allLogs.cardio, ...allLogs.strength, ...allLogs.hiit, ...allLogs.tmarm,
+      ].map(l => String(l.date)).filter(Boolean).sort()
+      if (dates.length > 0) {
+        datasetStart = dates[0]
+        datasetEnd = dates[dates.length - 1]
+        const first = new Date(datasetStart + 'T00:00:00Z')
+        // Align to the Monday of that week so weekly buckets stay week-aligned
+        const dow = first.getUTCDay() // 0=Sun
+        const backToMonday = (dow + 6) % 7
+        first.setUTCDate(first.getUTCDate() - backToMonday)
+        challengeStart = first
+        const spanMs = new Date(datasetEnd + 'T00:00:00Z').getTime() - first.getTime()
+        scoringWeeks = Math.max(1, Math.ceil((spanMs + 1) / (7 * 24 * 3600 * 1000)))
+      }
+    }
+
+
+
     // Build individual metrics for all active users
     const userMetrics = new Map<string, EntityMetrics>()
     for (const p of profiles) {
