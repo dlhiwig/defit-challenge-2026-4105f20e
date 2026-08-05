@@ -437,7 +437,18 @@ export default function Rankings() {
                 {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 Refresh
               </Button>
+              {cachedAt && (
+                <span
+                  className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
+                  aria-live="polite"
+                >
+                  {servingStale
+                    ? `Showing last known rankings (${formatCacheAge(cachedAt)}) — service unreachable`
+                    : `Updated ${formatCacheAge(cachedAt)}`}
+                </span>
+              )}
             </div>
+
 
             {/* Found Me Banner */}
             {foundMe && (
