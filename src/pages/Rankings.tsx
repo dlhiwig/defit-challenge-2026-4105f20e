@@ -79,11 +79,15 @@ function sortValue(entry: RankEntry, key: SortKey): number | string {
 export default function Rankings() {
   const { user } = useAuth();
   const [level, setLevel] = useState<RankingLevel>('individual');
+  const [dataset, setDataset] = useState<Dataset>('cycle');
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
+  const [windowRange, setWindowRange] = useState<{ start?: string | null; end?: string | null }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [servingStale, setServingStale] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,15 +107,25 @@ export default function Rankings() {
   const highlightedRef = useRef<HTMLTableRowElement | null>(null);
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
+  const cacheKey = `rankings:v1:${dataset}:${level}`;
+
+  const applyPayload = useCallback((payload: RankingsPayload) => {
+    setData(payload.data);
+    setTotal(payload.total);
+    setWindowRange({ start: payload.datasetStart, end: payload.datasetEnd });
+  }, []);
+
   const fetchRankings = useCallback(
-    async (opts: { search?: string; findMe?: string; refresh?: boolean } = {}) => {
-      if (opts.refresh) setRefreshing(true);
+    async (opts: { search?: string; findMe?: string; refresh?: boolean; background?: boolean } = {}) => {
+      if (opts.refresh || opts.background) setRefreshing(true);
       else setLoading(true);
-      setError(null);
+      if (!opts.background) setError(null);
+      const isPlain = !opts.search && !opts.findMe;
       try {
         const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
           body: {
             level,
+            dataset,
             limit: 500,
             search: opts.search ?? '',
             findMe: opts.findMe ?? '',
@@ -120,15 +134,34 @@ export default function Rankings() {
         if (fnError) throw fnError;
         if (res?.error) throw new Error(res.error);
 
-        setData((res?.data ?? []) as RankEntry[]);
-        setTotal(res?.total ?? 0);
+        const payload: RankingsPayload = {
+          data: (res?.data ?? []) as RankEntry[],
+          total: res?.total ?? 0,
+          datasetStart: res?.datasetStart ?? null,
+          datasetEnd: res?.datasetEnd ?? null,
+        };
+        applyPayload(payload);
         setSearchTotal(opts.search ? res?.searchTotal ?? res?.data?.length : undefined);
         if (opts.findMe) setFoundMe((res?.foundMe as RankEntry) ?? null);
+        if (isPlain) {
+          writeCache<RankingsPayload>(cacheKey, payload);
+          setCachedAt(Date.now());
+          setServingStale(false);
+        }
+        setError(null);
       } catch (err) {
         console.error('Rankings error:', err);
-        setError(
-          'The DEFIT ranking service did not respond. Scores are still recorded — this only affects the rankings view.'
-        );
+        // Resilience: prefer the last known rankings over an error wall.
+        const cached = readCache<RankingsPayload>(cacheKey, DEFAULT_TTL_MS, Number.POSITIVE_INFINITY);
+        if (cached) {
+          applyPayload(cached.data);
+          setCachedAt(cached.cachedAt);
+          setServingStale(true);
+        } else {
+          setError(
+            'The DEFIT ranking service did not respond. Scores are still recorded — this only affects the rankings view.'
+          );
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -136,9 +169,10 @@ export default function Rankings() {
         setFindingMe(false);
       }
     },
-    [level]
+    [level, dataset, cacheKey, applyPayload]
   );
 
+  // Stale-while-revalidate on level/dataset change
   useEffect(() => {
     setSearchQuery('');
     setFoundMe(null);
@@ -146,8 +180,21 @@ export default function Rankings() {
     setPage(1);
     setSortKey('rank');
     setSortDirection('asc');
+    setServingStale(false);
+    setCachedAt(null);
+
+    const cached = readCache<RankingsPayload>(cacheKey);
+    if (cached && !cached.isExpired) {
+      applyPayload(cached.data);
+      setCachedAt(cached.cachedAt);
+      setLoading(false);
+      setError(null);
+      if (cached.isStale) fetchRankings({ background: true });
+      return;
+    }
     fetchRankings();
-  }, [level, fetchRankings]);
+  }, [level, dataset, cacheKey, fetchRankings, applyPayload]);
+
 
   useEffect(() => {
     setPage(1);
