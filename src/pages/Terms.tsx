@@ -19,8 +19,8 @@ const Terms = () => {
               Terms of Service
             </h1>
             <p className="text-muted-foreground text-sm mb-8">
-              <strong>Effective Date:</strong> January 26, 2026<br />
-              <strong>Last Updated:</strong> January 26, 2026
+              <strong>Effective Date:</strong> January 11, 2027<br />
+              <strong>Last Updated:</strong> January 11, 2027
             </p>
 
             <section className="mb-10">

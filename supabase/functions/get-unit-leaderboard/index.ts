@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
          }
        ],
        "challengeRound": "DEFIT 2027 (11 Jan - 21 Mar)",
-       "snapshotDate": "2026-02-15T12:00:00Z",
+       "snapshotDate": "2027-02-15T12:00:00Z",
        "totalUnits": 12
      }
 */
