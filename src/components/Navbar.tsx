@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import doubleEagleLogo from "@/assets/double-eagle-logo.png";
+import defitEmblem from "@/assets/defit-kettlebell-eagle.png.asset.json";
 import NotificationBell from "@/components/NotificationBell";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
