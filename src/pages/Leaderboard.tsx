@@ -939,7 +939,19 @@ export default function Leaderboard() {
                         {pageEntries.map((entry) => (
                           <TableRow
                             key={entry.userId}
-                            className={`border-border ${
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View ${entry.name}'s workout history and scoring breakdown`}
+                            onClick={() =>
+                              setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setProfileFor({ userId: entry.userId, name: entry.name, unit: entry.unit });
+                              }
+                            }}
+                            className={`border-border cursor-pointer ${
                               entry.displayRank <= 3 ? getRankBadgeClass(entry.displayRank) : ''
                             }`}
                           >
@@ -956,6 +968,7 @@ export default function Leaderboard() {
                                 )}
                               </div>
                             </TableCell>
+
                             <TableCell className="text-right">
                               <p className="font-mono">{entry.cardioMiles.toFixed(1)} mi</p>
                               <p className="text-xs text-muted-foreground">
