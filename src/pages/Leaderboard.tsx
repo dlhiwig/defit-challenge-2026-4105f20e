@@ -353,6 +353,42 @@ export default function Leaderboard() {
     );
   };
 
+  const handleExportCsv = () => {
+    const headers = [
+      'Rank', 'Participant', 'Unit',
+      'Cardio Miles', `Cardio % of ${minimums.cardioMiles} mi`,
+      'Strength Lbs', `Strength % of ${minimums.strengthLbs} lbs`,
+      'HIIT Minutes', `HIIT % of ${minimums.hiitMinutes} min`,
+      'TMAR-M Minutes', `TMAR-M % of ${minimums.tmarmMinutes} min`,
+      'Overall Completion %',
+    ];
+    const rows = processed.map((e) => [
+      e.displayRank,
+      e.name,
+      e.unit ?? '',
+      e.cardioMiles.toFixed(1),
+      e.cardioCompletion.toFixed(1),
+      Math.round(e.strengthLbs),
+      e.strengthCompletion.toFixed(1),
+      Math.round(e.hiitMinutes),
+      e.hiitCompletion.toFixed(1),
+      Math.round(e.tmarmMinutes),
+      e.tmarmCompletion.toFixed(1),
+      e.overallCompletion.toFixed(1),
+    ]);
+    const meta = [
+      ['DEFIT 2027 Leaderboard'],
+      [`Sorted by: ${METRIC_LABELS[sortMetric]} (${sortDirection === 'desc' ? 'high to low' : 'low to high'})`],
+      [query.trim() ? `Filter: "${query.trim()}"` : 'Filter: none'],
+      [`Rows exported: ${rows.length}`],
+      [`Exported: ${new Date().toLocaleString()}`],
+      [],
+    ];
+    const csv = `${buildCsv(meta[0] as string[], meta.slice(1))}\r\n${buildCsv(headers, rows)}`;
+    downloadCsv(`defit-leaderboard-${csvTimestamp()}.csv`, csv);
+    toast({ title: 'Export ready', description: `${rows.length} row${rows.length === 1 ? '' : 's'} downloaded as CSV.` });
+  };
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -567,6 +603,34 @@ export default function Leaderboard() {
                   Refresh
                 </Button>
 
+                <Select value={autoRefresh} onValueChange={setAutoRefresh}>
+                  <SelectTrigger className="w-[180px] bg-secondary" aria-label="Auto-refresh interval">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {AUTO_REFRESH_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCsv}
+                  disabled={loading || processed.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+
+                <Button variant="outline" size="sm" onClick={handleShareLink}>
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Copy share link
+                </Button>
+
                 {cachedAt && (
                   <span
                     className={`text-xs ${servingStale ? 'text-amber-400' : 'text-muted-foreground'}`}
@@ -578,6 +642,33 @@ export default function Leaderboard() {
                   </span>
                 )}
               </div>
+
+              {/* Auto-refresh status */}
+              {intervalMs > 0 && (
+                <div className="flex flex-wrap items-center gap-2 text-xs" aria-live="polite">
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <Timer className="w-3.5 h-3.5" />
+                    Auto-refreshing {AUTO_REFRESH_OPTIONS.find((o) => o.value === autoRefresh)?.label.replace('Every', 'every').toLowerCase()}
+                    {nextRefreshIn !== null && ` · next check in ${Math.floor(nextRefreshIn / 60)}:${String(nextRefreshIn % 60).padStart(2, '0')}`}
+                  </span>
+                  {refreshing ? (
+                    <span className="inline-flex items-center gap-1.5 text-primary">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Checking for new scores…
+                    </span>
+                  ) : changedAt ? (
+                    <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      New standings loaded {formatCacheAge(changedAt)}
+                    </span>
+                  ) : lastAutoAt ? (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Checked {formatCacheAge(lastAutoAt)} — no changes, showing cached standings
+                    </span>
+                  ) : null}
+                </div>
+              )}
 
             </div>
           </div>
