@@ -66,6 +66,30 @@ function RankIcon({ rank }: { rank: number }) {
   return <span className="font-bold text-muted-foreground">{rank}</span>;
 }
 
+/** Rank/score change between datasets. Lower is better, so negative = improvement. */
+function Delta({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-xs text-muted-foreground">not ranked</span>;
+  if (value === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+        <Minus className="w-3 h-3" />0
+      </span>
+    );
+  }
+  const better = value < 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${
+        better ? 'text-emerald-400' : 'text-amber-400'
+      }`}
+    >
+      {better ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />}
+      {value > 0 ? `+${value}` : value}
+    </span>
+  );
+}
+
+
 function sortValue(entry: RankEntry, key: SortKey): number | string {
   switch (key) {
     case 'score': return entry.totalScore;
