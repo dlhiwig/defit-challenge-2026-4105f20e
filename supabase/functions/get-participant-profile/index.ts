@@ -274,7 +274,8 @@ Deno.serve(async (req) => {
         overallCompletion: overall,
         activeWeeks,
         weekly: { cardio: weekly.cardio, strength: weekly.strength, hiit: cappedHiit, tmarm: cappedTmarm },
-        history,
+        restricted: !canSeeDetail,
+        history: canSeeDetail ? history : [],
         logCounts: {
           total: history.length,
           inWindow: history.filter(h => h.inWindow).length,
@@ -287,7 +288,7 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=900',
+          'Cache-Control': 'private, no-store',
         },
         status: 200,
       }
