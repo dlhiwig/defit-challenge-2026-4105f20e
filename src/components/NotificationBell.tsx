@@ -59,9 +59,9 @@ export default function NotificationBell() {
     fetchUnreadCount();
     fetchRecent();
 
-    // Real-time subscription
+    // Real-time subscription (unique channel per mount to avoid re-subscribe errors)
     const channel = supabase
-      .channel('notification-bell')
+      .channel(`notification-bell-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
