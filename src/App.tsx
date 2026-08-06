@@ -31,6 +31,7 @@ import Rankings from "./pages/Rankings";
 import Scoring from "./pages/Scoring";
 import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
+import AuthCallback from "./pages/AuthCallback";
 import RegistrationConfirmed from "./pages/RegistrationConfirmed";
 import ProgressTracker from "./pages/ProgressTracker";
 
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/register/confirmed" element={<RegistrationConfirmed />} />
               <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />

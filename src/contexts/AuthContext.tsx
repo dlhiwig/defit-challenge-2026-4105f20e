@@ -9,6 +9,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable';
 
 // Supabase users already expose `id`; the alias keeps existing call sites unchanged.
 export type AppUser = User & { id: string };
