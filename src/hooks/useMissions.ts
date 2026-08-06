@@ -229,7 +229,7 @@ export function useMissionDetail(slug: string) {
 
       return {
         ...mission,
-        participant_count: (countRes.data || []).length,
+        participant_count: (countRes.data as number | null) ?? 0,
         user_enrollment: enrollmentRes.data,
         phases: phasesRes.data || [],
         schedule,
