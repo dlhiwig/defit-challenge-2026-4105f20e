@@ -323,7 +323,6 @@ export default function Rankings() {
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compare, level, otherDataset]);
 
   useEffect(() => {

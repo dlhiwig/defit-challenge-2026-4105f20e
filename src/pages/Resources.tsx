@@ -4,13 +4,6 @@ import { ExternalLink, FileText, Video, BookOpen, Heart, Brain, Apple, Moon, Pla
 
 const featuredVideos = [
   {
-    title: "Holistic Health & Fitness: Optimal Readiness and Lethality",
-    url: "https://www.youtube.com/watch?v=fRM-fPeVs0k",
-    thumbnail: "https://img.youtube.com/vi/fRM-fPeVs0k/hqdefault.jpg",
-    source: "Defense Visual Information",
-    duration: "5:32",
-  },
-  {
     title: "ALL YOU — Army H2F Wellness Series",
     url: "https://www.youtube.com/watch?v=BzZ3NWTs4Mo",
     thumbnail: "https://img.youtube.com/vi/BzZ3NWTs4Mo/hqdefault.jpg",
@@ -194,7 +187,17 @@ const Resources = () => {
                       alt={video.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (!img.dataset.fallback) {
+                          img.dataset.fallback = "1";
+                          img.src = img.src.replace("hqdefault.jpg", "mqdefault.jpg");
+                        } else {
+                          img.style.display = "none";
+                        }
+                      }}
                     />
+
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center">
                         <Play className="w-6 h-6 text-primary-foreground ml-0.5" />

@@ -135,7 +135,7 @@ export function useMissions(filters: MissionsFilter) {
       });
 
       // Fetch user enrollments if logged in
-      let userEnrollments: Record<string, any> = {};
+      const userEnrollments: Record<string, any> = {};
       if (user) {
         const { data: ue } = await supabase
           .from('user_missions')
@@ -199,7 +199,7 @@ export function useMissionDetail(slug: string) {
         .order('order_index');
 
       // Fetch user day progress
-      let dayProgressMap: Record<number, string> = {};
+      const dayProgressMap: Record<number, string> = {};
       if (user) {
         const { data: dp } = await supabase
           .from('user_mission_day_progress')
