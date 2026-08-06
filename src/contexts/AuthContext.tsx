@@ -1,39 +1,22 @@
 /**
- * Firebase Auth Context
- * 
- * Provides authentication state and methods using Firebase Auth.
- * Shares the same Firebase project as the DEFIT App (defit.work),
- * so users can sign up on either site and log into both.
+ * Auth Context — Supabase Auth (single identity system).
+ *
+ * Supabase Auth is the authoritative identity provider for DEFIT 2027. The database
+ * schema, foreign keys, RLS policies, auth.uid(), the profile trigger and the role
+ * model all resolve against auth.users, so no bridge or second identity system exists.
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup,
-  OAuthProvider,
-  linkWithCredential,
-  EmailAuthProvider,
-  sendPasswordResetEmail,
-} from 'firebase/auth';
-import { initializeFirebase, getFirebaseAuth } from '@/lib/firebase';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-// Initialize Firebase on module load
-initializeFirebase();
-
-// Firebase exposes `uid`; the app consumes `id` throughout, so we expose both.
+// Supabase users already expose `id`; the alias keeps existing call sites unchanged.
 export type AppUser = User & { id: string };
 
 interface AuthContextType {
   user: AppUser | null;
-  session: { access_token?: string } | null; // Compatibility with old code
+  session: Session | null;
   loading: boolean;
-  isDemoMode: boolean; // Always false now
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -45,104 +28,77 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(
-        firebaseUser
-          ? (Object.assign(Object.create(Object.getPrototypeOf(firebaseUser)), firebaseUser, {
-              id: firebaseUser.uid,
-            }) as AppUser)
-          : null
-      );
+    // Listener is registered before the initial read so no event is missed.
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setUser((nextSession?.user as AppUser) ?? null);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser((data.session?.user as AppUser) ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const auth = getFirebaseAuth();
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update display name
-      if (result.user && fullName) {
-        await updateProfile(result.user, { displayName: fullName });
-      }
-      
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { full_name: fullName },
+      },
+    });
+    return { error: error as Error | null };
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const auth = getFirebaseAuth();
-      await signInWithEmailAndPassword(auth, email, password);
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error as Error | null };
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const auth = getFirebaseAuth();
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, provider);
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  };
-
-  const signInWithApple = async () => {
-    try {
-      const auth = getFirebaseAuth();
-      const provider = new OAuthProvider('apple.com');
-      provider.addScope('email');
-      provider.addScope('name');
-      await signInWithPopup(auth, provider);
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
+  const signInWithOAuth = async (provider: 'google' | 'apple') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    });
+    return { error: error as Error | null };
   };
 
   const resetPassword = async (email: string) => {
-    try {
-      const auth = getFirebaseAuth();
-      await sendPasswordResetEmail(auth, email);
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error: error as Error | null };
   };
 
   const signOut = async () => {
-    const auth = getFirebaseAuth();
-    await firebaseSignOut(auth);
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session: user ? { access_token: undefined } : null, // Compatibility stub
-      loading,
-      isDemoMode: false, // Firebase auth is always live
-      signUp,
-      signIn,
-      signInWithGoogle,
-      signInWithApple,
-      resetPassword,
-      signOut,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle: () => signInWithOAuth('google'),
+        signInWithApple: () => signInWithOAuth('apple'),
+        resetPassword,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
