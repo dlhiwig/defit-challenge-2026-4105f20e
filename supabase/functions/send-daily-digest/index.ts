@@ -27,10 +27,34 @@ interface UserDigest {
   items: DigestItem[];
 }
 
+const CRON_GUARD_HEADERS = { 'Content-Type': 'application/json' };
+function assertCronSecret(req: Request): Response | null {
+  const expected = Deno.env.get('CRON_SECRET');
+  if (!expected) {
+    return new Response(JSON.stringify({ error: 'Scheduler secret not configured' }), {
+      status: 503,
+      headers: { ...corsHeaders, ...CRON_GUARD_HEADERS },
+    });
+  }
+  const provided =
+    req.headers.get('x-cron-secret') ??
+    (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (provided !== expected) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, ...CRON_GUARD_HEADERS },
+    });
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const cronDenied = assertCronSecret(req);
+  if (cronDenied) return cronDenied;
 
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
