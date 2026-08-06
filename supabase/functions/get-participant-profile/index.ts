@@ -76,6 +76,37 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // --- Authentication: a valid JWT is required for any participant lookup. ---
+    const authHeader = req.headers.get('Authorization') ?? ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Authentication required.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const { data: authData, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    )
+    const caller = authData?.user
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ error: 'Authentication required.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Full detail (workout history, notes) is limited to the participant or an admin.
+    let canSeeDetail = caller.id === userId
+    if (!canSeeDetail) {
+      const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', caller.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+      canSeeDetail = Boolean(roleRow)
+    }
+
     const [profileRes, cfgRes, cardioRes, strengthRes, hiitRes, tmarmRes] = await Promise.all([
       supabase.from('profiles').select('user_id, full_name, unit, unit_category').eq('user_id', userId).maybeSingle(),
       supabase.from('challenge_config').select('key, value'),
