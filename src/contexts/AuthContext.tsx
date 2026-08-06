@@ -67,11 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithOAuth = async (provider: 'google' | 'apple') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: window.location.origin },
+    const result = await lovable.auth.signInWithOAuth(provider, {
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
-    return { error: error as Error | null };
+    return { error: (result?.error as Error | undefined) ?? null };
   };
 
   const resetPassword = async (email: string) => {
