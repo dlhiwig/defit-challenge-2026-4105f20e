@@ -4,13 +4,6 @@ import { ExternalLink, FileText, Video, BookOpen, Heart, Brain, Apple, Moon, Pla
 
 const featuredVideos = [
   {
-    title: "Holistic Health & Fitness: Optimal Readiness and Lethality",
-    url: "https://www.youtube.com/watch?v=fRM-fPeVs0k",
-    thumbnail: "https://img.youtube.com/vi/fRM-fPeVs0k/hqdefault.jpg",
-    source: "Defense Visual Information",
-    duration: "5:32",
-  },
-  {
     title: "ALL YOU — Army H2F Wellness Series",
     url: "https://www.youtube.com/watch?v=BzZ3NWTs4Mo",
     thumbnail: "https://img.youtube.com/vi/BzZ3NWTs4Mo/hqdefault.jpg",
