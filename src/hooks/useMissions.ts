@@ -121,17 +121,17 @@ export function useMissions(filters: MissionsFilter) {
       const { data: missions, error } = await query;
       if (error) throw error;
 
-      // Fetch participant counts
+      // Participant counts come from a secure function so enrollment rows stay private.
       const missionIds = missions.map((m: any) => m.id);
-      const { data: enrollments } = await supabase
-        .from('user_missions')
-        .select('mission_id')
-        .in('mission_id', missionIds)
-        .in('status', ['active', 'completed']);
-
       const countMap: Record<string, number> = {};
-      (enrollments || []).forEach((e: any) => {
-        countMap[e.mission_id] = (countMap[e.mission_id] || 0) + 1;
+      const counts = await Promise.all(
+        missionIds.map(async (id: string) => ({
+          id,
+          count: (await supabase.rpc('get_mission_participant_count', { p_mission_id: id })).data ?? 0,
+        }))
+      );
+      counts.forEach(({ id, count }) => {
+        countMap[id] = count as number;
       });
 
       // Fetch user enrollments if logged in
@@ -178,7 +178,7 @@ export function useMissionDetail(slug: string) {
       const [phasesRes, scheduleRes, countRes, enrollmentRes] = await Promise.all([
         supabase.from('mission_phases').select('*').eq('mission_id', mission.id).order('phase_number'),
         supabase.from('mission_schedule').select('*').eq('mission_id', mission.id).order('day_number'),
-        supabase.from('user_missions').select('id').eq('mission_id', mission.id).in('status', ['active', 'completed']),
+        supabase.rpc('get_mission_participant_count', { p_mission_id: mission.id }),
         user
           ? supabase.from('user_missions').select('*').eq('mission_id', mission.id).eq('user_id', user.id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -229,7 +229,7 @@ export function useMissionDetail(slug: string) {
 
       return {
         ...mission,
-        participant_count: (countRes.data || []).length,
+        participant_count: (countRes.data as number | null) ?? 0,
         user_enrollment: enrollmentRes.data,
         phases: phasesRes.data || [],
         schedule,

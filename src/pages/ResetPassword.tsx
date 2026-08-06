@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { supabase } from '@/integrations/supabase/client';
+import { mapDbError } from '@/lib/mapDbError';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -38,15 +38,12 @@ type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidCode, setIsValidCode] = useState(false);
+  const [isValidLink, setIsValidLink] = useState(false);
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
-
-  // Get the oobCode from URL (Firebase password reset code)
-  const oobCode = searchParams.get('oobCode') || searchParams.get('code');
+  const [done, setDone] = useState(false);
 
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -54,157 +51,125 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    // Verify the password reset code
-    const verifyCode = async () => {
-      if (!oobCode) {
-        setChecking(false);
-        return;
-      }
-
-      try {
-        const auth = getFirebaseAuth();
-        const userEmail = await verifyPasswordResetCode(auth, oobCode);
-        setEmail(userEmail);
-        setIsValidCode(true);
-      } catch (error) {
-        console.error('Invalid reset code:', error);
-        setIsValidCode(false);
-      } finally {
+    // Supabase delivers a recovery session via the URL fragment; the auth client
+    // exchanges it automatically, so we only need to confirm a session exists.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setEmail(session?.user?.email ?? null);
+        setIsValidLink(true);
         setChecking(false);
       }
-    };
+    });
 
-    verifyCode();
-  }, [oobCode]);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setEmail(data.session.user.email ?? null);
+        setIsValidLink(true);
+      }
+      setChecking(false);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const handleResetPassword = async (data: ResetPasswordValues) => {
-    if (!oobCode) return;
-
     setIsLoading(true);
-    try {
-      const auth = getFirebaseAuth();
-      await confirmPasswordReset(auth, oobCode, data.password);
-      
+    const { error } = await supabase.auth.updateUser({ password: data.password });
+    setIsLoading(false);
+
+    if (error) {
       toast({
-        title: 'Password updated',
-        description: 'Please sign in with your new password.',
-      });
-      navigate('/auth');
-    } catch (error: any) {
-      toast({
-        title: 'Password update failed',
-        description: error.message || 'Something went wrong. Please try again.',
+        title: 'Could not update password',
+        description: mapDbError(error, 'reset-password'),
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    setDone(true);
+    toast({ title: 'Password updated', description: 'You can now use your new password.' });
+    setTimeout(() => navigate('/dashboard'), 1200);
   };
-
-  if (checking) {
-    return (
-      <main className="min-h-screen bg-background texture-canvas">
-        <Navbar />
-        <section className="pt-24 pb-16 min-h-[80vh] flex items-center justify-center">
-          <p className="text-muted-foreground">Verifying reset link…</p>
-        </section>
-        <Footer />
-      </main>
-    );
-  }
-
-  if (!isValidCode) {
-    return (
-      <main className="min-h-screen bg-background texture-canvas">
-        <Navbar />
-        <section className="pt-24 pb-16 min-h-[80vh] flex items-center">
-          <div className="container px-4 max-w-md mx-auto text-center">
-            <div className="glass rounded-2xl p-8">
-              <h1 className="text-2xl font-heading font-bold text-foreground mb-4">
-                Invalid or expired link
-              </h1>
-              <p className="text-muted-foreground mb-6">
-                This password reset link is invalid or has expired. Please request a new one.
-              </p>
-              <Button variant="hero" onClick={() => navigate('/auth')}>
-                Back to sign in
-              </Button>
-            </div>
-          </div>
-        </section>
-        <Footer />
-      </main>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-background texture-canvas">
       <Navbar />
-      <section className="pt-24 pb-16 min-h-[80vh] flex items-center">
+
+      <section className="pt-28 pb-16 min-h-[70vh] flex items-center">
         <div className="container px-4 max-w-md mx-auto">
           <div className="glass rounded-2xl p-8">
-            <div className="flex flex-col items-center mb-6">
-              <KeyRound className="w-12 h-12 text-primary mb-3" />
-              <h1 className="text-2xl font-heading font-bold text-foreground">
-                Create a new password
-              </h1>
-              {email && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  for {email}
-                </p>
+            <div className="flex flex-col items-center mb-6 text-center">
+              <span className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center mb-4">
+                {done ? (
+                  <CheckCircle className="w-6 h-6 text-primary" />
+                ) : (
+                  <KeyRound className="w-6 h-6 text-primary" />
+                )}
+              </span>
+              <h1 className="text-2xl font-heading font-bold">Set a new password</h1>
+              {email && !done && (
+                <p className="text-sm text-muted-foreground mt-2">for {email}</p>
               )}
             </div>
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleResetPassword)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          className="bg-secondary"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs">
-                        Minimum 8 characters
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          className="bg-secondary"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {isLoading ? 'Updating…' : 'Update password'}
+            {checking ? (
+              <p className="text-sm text-muted-foreground text-center" role="status">
+                Checking your reset link…
+              </p>
+            ) : done ? (
+              <p className="text-sm text-muted-foreground text-center">
+                Your password has been updated. Redirecting to your dashboard…
+              </p>
+            ) : !isValidLink ? (
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  This reset link is invalid or has expired. Request a new one from the sign-in
+                  page.
+                </p>
+                <Button variant="hero" className="w-full" onClick={() => navigate('/auth')}>
+                  Back to sign in
                 </Button>
-              </form>
-            </Form>
+              </div>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleResetPassword)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>New password</FormLabel>
+                        <FormControl>
+                          <Input type="password" className="bg-secondary" autoComplete="new-password" {...field} />
+                        </FormControl>
+                        <FormDescription>At least 8 characters.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm new password</FormLabel>
+                        <FormControl>
+                          <Input type="password" className="bg-secondary" autoComplete="new-password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Updating…' : 'Update password'}
+                  </Button>
+                </form>
+              </Form>
+            )}
           </div>
         </div>
       </section>
+
       <Footer />
     </main>
   );

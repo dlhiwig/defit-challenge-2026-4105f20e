@@ -76,6 +76,37 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // --- Authentication: a valid JWT is required for any participant lookup. ---
+    const authHeader = req.headers.get('Authorization') ?? ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Authentication required.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const { data: authData, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    )
+    const caller = authData?.user
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ error: 'Authentication required.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Full detail (workout history, notes) is limited to the participant or an admin.
+    let canSeeDetail = caller.id === userId
+    if (!canSeeDetail) {
+      const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', caller.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+      canSeeDetail = Boolean(roleRow)
+    }
+
     const [profileRes, cfgRes, cardioRes, strengthRes, hiitRes, tmarmRes] = await Promise.all([
       supabase.from('profiles').select('user_id, full_name, unit, unit_category').eq('user_id', userId).maybeSingle(),
       supabase.from('challenge_config').select('key, value'),
@@ -243,7 +274,8 @@ Deno.serve(async (req) => {
         overallCompletion: overall,
         activeWeeks,
         weekly: { cardio: weekly.cardio, strength: weekly.strength, hiit: cappedHiit, tmarm: cappedTmarm },
-        history,
+        restricted: !canSeeDetail,
+        history: canSeeDetail ? history : [],
         logCounts: {
           total: history.length,
           inWindow: history.filter(h => h.inWindow).length,
@@ -256,7 +288,7 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=900',
+          'Cache-Control': 'private, no-store',
         },
         status: 200,
       }

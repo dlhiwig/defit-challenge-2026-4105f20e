@@ -28,6 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { mapDbError, isUniqueViolation } from '@/lib/mapDbError';
 import { CHALLENGE_CYCLE, CHALLENGE_DATE_RANGE, CHALLENGE_LABEL } from '@/lib/challenge';
 
 const UNIT_CATEGORIES = [
@@ -114,8 +115,11 @@ export default function Register() {
         email_reminders: data.emailReminders,
       });
 
-      if (insertError && insertError.code !== '23505') {
-        console.error('Registration record failed:', insertError);
+      if (insertError && !isUniqueViolation(insertError)) {
+        toast({
+          title: 'Registration saved with a warning',
+          description: mapDbError(insertError, 'defit_registrations.insert'),
+        });
       }
 
       sessionStorage.setItem(
@@ -125,10 +129,9 @@ export default function Register() {
 
       navigate('/register/confirmed');
     } catch (err) {
-      console.error(err);
       toast({
         title: 'Something went wrong',
-        description: 'Please try again in a moment.',
+        description: mapDbError(err, 'register.submit'),
         variant: 'destructive',
       });
     } finally {
