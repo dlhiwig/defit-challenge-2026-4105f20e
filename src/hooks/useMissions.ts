@@ -182,7 +182,10 @@ export function useMissionDetail(slug: string) {
       const [phasesRes, scheduleRes, countRes, enrollmentRes] = await Promise.all([
         supabase.from('mission_phases').select('*').eq('mission_id', mission.id).order('phase_number'),
         supabase.from('mission_schedule').select('*').eq('mission_id', mission.id).order('day_number'),
-        supabase.rpc('get_mission_participant_count', { p_mission_id: mission.id }),
+        user
+          ? supabase.rpc('get_mission_participant_count', { p_mission_id: mission.id })
+          : Promise.resolve({ data: 0 }),
+
         user
           ? supabase.from('user_missions').select('*').eq('mission_id', mission.id).eq('user_id', user.id).maybeSingle()
           : Promise.resolve({ data: null }),
