@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('user_id, full_name, unit, email_notifications, in_app_notifications')
+      .select('user_id, full_name, unit, email_notifications, in_app_notifications, notify_weekly_summary')
       .limit(MAX_PARTICIPANTS);
     if (error) throw error;
 
@@ -51,6 +51,11 @@ Deno.serve(async (req) => {
 
     for (const profile of profiles ?? []) {
       try {
+        if ((profile as { notify_weekly_summary?: boolean }).notify_weekly_summary === false) {
+          skipped++;
+          continue;
+        }
+
         const activity = await loadActivity(supabase, profile.user_id, since);
         const logCount =
           activity.hiit.length + activity.tmarm.length + activity.cardio.length + activity.strength.length;
