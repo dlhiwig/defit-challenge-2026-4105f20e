@@ -122,17 +122,21 @@ export function useMissions(filters: MissionsFilter) {
       if (error) throw error;
 
       // Participant counts come from a secure function so enrollment rows stay private.
+      // Only signed-in users may call it; anonymous visitors simply see no count.
       const missionIds = missions.map((m: any) => m.id);
       const countMap: Record<string, number> = {};
-      const counts = await Promise.all(
-        missionIds.map(async (id: string) => ({
-          id,
-          count: (await supabase.rpc('get_mission_participant_count', { p_mission_id: id })).data ?? 0,
-        }))
-      );
-      counts.forEach(({ id, count }) => {
-        countMap[id] = count as number;
-      });
+      if (user) {
+        const counts = await Promise.all(
+          missionIds.map(async (id: string) => {
+            const { data } = await supabase.rpc('get_mission_participant_count', { p_mission_id: id });
+            return { id, count: data ?? 0 };
+          })
+        );
+        counts.forEach(({ id, count }) => {
+          countMap[id] = count as number;
+        });
+      }
+
 
       // Fetch user enrollments if logged in
       const userEnrollments: Record<string, any> = {};
@@ -178,7 +182,10 @@ export function useMissionDetail(slug: string) {
       const [phasesRes, scheduleRes, countRes, enrollmentRes] = await Promise.all([
         supabase.from('mission_phases').select('*').eq('mission_id', mission.id).order('phase_number'),
         supabase.from('mission_schedule').select('*').eq('mission_id', mission.id).order('day_number'),
-        supabase.rpc('get_mission_participant_count', { p_mission_id: mission.id }),
+        user
+          ? supabase.rpc('get_mission_participant_count', { p_mission_id: mission.id })
+          : Promise.resolve({ data: 0 }),
+
         user
           ? supabase.from('user_missions').select('*').eq('mission_id', mission.id).eq('user_id', user.id).maybeSingle()
           : Promise.resolve({ data: null }),
