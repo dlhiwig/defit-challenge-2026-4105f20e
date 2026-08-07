@@ -239,6 +239,12 @@ function ProgressTrackerContent() {
         </div>
       </section>
 
+      <section className="pb-10">
+        <div className="container px-4">
+          <AICoachFeedback />
+        </div>
+      </section>
+
       <section className="pb-16">
         <div className="container px-4">
           <AnnouncementsSection limit={4} compact />
