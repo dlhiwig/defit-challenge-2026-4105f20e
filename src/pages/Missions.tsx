@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Search, Users, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { useMissions, useJoinMission, type MissionsFilter, type Mission, type MissionFocus, type MissionDifficulty } from "@/hooks/useMissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { AIMissionRecommendations } from "@/components/ai/AIMissionRecommendations";
 
 const focusLabels: Record<MissionFocus, string> = {
   strength: "Strength",
