@@ -59,6 +59,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/register/confirmed" element={<RegistrationConfirmed />} />
               <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
