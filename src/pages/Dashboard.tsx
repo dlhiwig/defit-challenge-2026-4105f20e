@@ -11,9 +11,10 @@ import { ProgressSummary } from '@/components/dashboard/ProgressSummary';
 import { WorkoutProvider } from '@/contexts/WorkoutContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Dumbbell, Flame, Heart, BarChart3, ArrowLeft, LogOut, Loader2, History, Settings, Shield } from 'lucide-react';
+import { Clock, Dumbbell, Flame, Heart, BarChart3, ArrowLeft, LogOut, Loader2, History, Settings, Shield, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MyMissions } from '@/components/dashboard/MyMissions';
+import { WeeklySummaries } from '@/components/dashboard/WeeklySummaries';
 
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState('summary');
@@ -101,6 +102,12 @@ function DashboardContent() {
                   Profile
                 </Link>
               </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/settings/notifications">
+                  <Bell className="w-4 h-4 mr-2" />
+                  Notifications
+                </Link>
+              </Button>
               {isAdmin && (
                 <Button 
                   variant="outline" 
@@ -140,6 +147,13 @@ function DashboardContent() {
       <section className="pb-4">
         <div className="container px-4">
           <MyMissions />
+        </div>
+      </section>
+
+      {/* AI Weekly Summaries */}
+      <section className="pb-4">
+        <div className="container px-4">
+          <WeeklySummaries />
         </div>
       </section>
 
