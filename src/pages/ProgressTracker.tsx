@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HIITForm } from '@/components/dashboard/HIITForm';
 import { TMARMForm } from '@/components/dashboard/TMARMForm';
 import { AnnouncementsSection } from '@/components/AnnouncementsSection';
+import { AICoachFeedback } from '@/components/ai/AICoachFeedback';
 import { WorkoutProvider, useWorkout } from '@/contexts/WorkoutContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { CHALLENGE_MINIMUMS, HIITLog, TMARMLog } from '@/types/workout';
@@ -235,6 +236,12 @@ function ProgressTrackerContent() {
               </TabsContent>
             </Tabs>
           </div>
+        </div>
+      </section>
+
+      <section className="pb-10">
+        <div className="container px-4">
+          <AICoachFeedback />
         </div>
       </section>
 
