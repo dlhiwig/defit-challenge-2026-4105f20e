@@ -565,8 +565,10 @@ export type Database = {
           id: string
           in_app_notifications: boolean
           notification_mode: string
+          notify_ai_feedback: boolean
           notify_on_flagged: boolean
           notify_on_verified: boolean
+          notify_weekly_summary: boolean
           unit: string | null
           unit_category: Database["public"]["Enums"]["unit_category"] | null
           updated_at: string
@@ -580,8 +582,10 @@ export type Database = {
           id?: string
           in_app_notifications?: boolean
           notification_mode?: string
+          notify_ai_feedback?: boolean
           notify_on_flagged?: boolean
           notify_on_verified?: boolean
+          notify_weekly_summary?: boolean
           unit?: string | null
           unit_category?: Database["public"]["Enums"]["unit_category"] | null
           updated_at?: string
@@ -595,8 +599,10 @@ export type Database = {
           id?: string
           in_app_notifications?: boolean
           notification_mode?: string
+          notify_ai_feedback?: boolean
           notify_on_flagged?: boolean
           notify_on_verified?: boolean
+          notify_weekly_summary?: boolean
           unit?: string | null
           unit_category?: Database["public"]["Enums"]["unit_category"] | null
           updated_at?: string
