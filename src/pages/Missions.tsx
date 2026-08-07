@@ -131,6 +131,10 @@ export default function Missions() {
           </p>
         </div>
 
+        <div className="mb-8">
+          <AIMissionRecommendations />
+        </div>
+
         {/* Controls */}
         <div className="flex flex-col md:flex-row gap-3 mb-8">
           <div className="relative flex-1 max-w-sm">
