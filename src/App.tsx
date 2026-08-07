@@ -34,6 +34,7 @@ import Register from "./pages/Register";
 import AuthCallback from "./pages/AuthCallback";
 import RegistrationConfirmed from "./pages/RegistrationConfirmed";
 import ProgressTracker from "./pages/ProgressTracker";
+import NotificationSettings from "./pages/NotificationSettings";
 
 const queryClient = new QueryClient();
 
