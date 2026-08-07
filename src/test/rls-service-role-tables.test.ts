@@ -9,8 +9,9 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
  */
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-const testEmail = process.env.TEST_USER;
-const testPassword = process.env.TEST_PASS;
+const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+const testEmail = env.TEST_USER;
+const testPassword = env.TEST_PASS;
 
 const makeClient = () =>
   createClient(url ?? "http://localhost", key ?? "anon", {
