@@ -71,7 +71,7 @@ Respond with JSON only:
 {"subject":"email subject, max 70 chars","summary":"2-3 sentences on the week","wins":["up to 3 short wins"],"focusNextWeek":["2-3 short focus items"]}`,
             },
           ],
-          { maxTokens: 700 },
+          { maxTokens: 1200 },
         );
 
         const parsed = parseJsonFromModel<WeeklySummary>(text);

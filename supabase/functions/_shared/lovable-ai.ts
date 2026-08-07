@@ -33,7 +33,9 @@ export async function callLovableAi(
     body: JSON.stringify({
       model: options.model ?? DEFAULT_MODEL,
       messages,
-      max_tokens: options.maxTokens ?? 1200,
+      max_tokens: options.maxTokens ?? 2000,
+      // Reasoning tokens would eat the output budget; these calls are short-form JSON.
+      reasoning: { enabled: false },
     }),
   });
 
