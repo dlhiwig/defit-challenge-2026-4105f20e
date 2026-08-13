@@ -69,6 +69,8 @@ interface WorkoutLog {
   cardio_type?: string;
   distance?: number;
   distance_unit?: string;
+  original_distance?: number;
+  original_unit?: string;
   notes?: string;
   // Strength specific
   exercise_name?: string;
@@ -310,7 +312,11 @@ export default function AdminVerifyLogs() {
   const getLogDetails = (log: WorkoutLog) => {
     switch (log.log_type) {
       case 'cardio':
-        return `${log.distance} ${log.distance_unit} (${log.cardio_type?.replace('_', ' ')})`;
+        return `${Number(log.distance).toFixed(2)} miles${
+          log.original_unit === 'meters' && log.original_distance
+            ? ` (entered ${log.original_distance} meters)`
+            : ''
+        } (${log.cardio_type?.replace('_', ' ')})`;
       case 'strength':
         return `${log.exercise_name}: ${log.sets}×${log.reps_per_set} @ ${log.weight_per_rep}lbs = ${log.total_weight}lbs`;
       case 'hiit':
