@@ -6,8 +6,7 @@ const corsHeaders = {
 }
 
 import {
-  HIIT_WEEKLY_CAP, TMARM_WEEKLY_CAP, DEFAULT_SCORING_WEEKS,
-  DEFAULT_CHALLENGE_START, COMPLETION_MINS, COMPLETION_WEIGHTS,
+  DEFAULT_SCORING_WEEKS, DEFAULT_CHALLENGE_START, DEFAULT_CHALLENGE_END, CHALLENGE_CYCLE,
   buildUserMetrics, aggregatePool, computeRankings, isComplete, getUnitPoolSize,
 } from '../_shared/scoring-engine.ts'
 import type { EntityMetrics, RankResult } from '../_shared/scoring-engine.ts'
@@ -51,8 +50,10 @@ Deno.serve(async (req) => {
     const { data: configRows } = await supabase.from('challenge_config').select('key, value')
     const cfg: Record<string, string> = {}
     configRows?.forEach(r => { cfg[r.key] = r.value })
-    let challengeStart = new Date(cfg.challenge_start_date || '2027-01-11')
+    let challengeStart = new Date(cfg.challenge_start_date || DEFAULT_CHALLENGE_START)
     let scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
+    const challengeEnd = cfg.challenge_end_date || DEFAULT_CHALLENGE_END
+    const cycle = cfg.cycle || CHALLENGE_CYCLE
 
 
     // Fetch all data in parallel
@@ -250,7 +251,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       level, dataset, data: outputData, total: totalRanked,
       searchTotal: searchApplied ? results.length : undefined,
-      challengeStart: challengeStart.toISOString(), scoringWeeks,
+      challengeStart: challengeStart.toISOString(), challengeEnd, cycle, scoringWeeks,
+      // Standings are PROVISIONAL: pending logs are included and may change after admin review.
+      adjudication: 'provisional',
       datasetStart, datasetEnd,
       generatedAt: new Date().toISOString(),
       foundMe,
