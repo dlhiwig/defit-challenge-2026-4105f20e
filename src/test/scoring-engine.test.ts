@@ -255,7 +255,7 @@ describe('pooled rankings (team / unit / command)', () => {
     const agg = aggregatePool(pool, 'team-1', 'Team One', WEEKS)
     expect(agg.weeklyCardio[0]).toBe(15)
     expect(agg.totalCardio).toBe(15 * WEEKS)
-    expect(agg.weeklyHiit[0]).toBe(96)
+    expect(agg.weeklyHiit[0]).toBe(HIIT_WEEKLY_CAP * 2)
   })
 
   it('selects only the top four members for a team pool', () => {
