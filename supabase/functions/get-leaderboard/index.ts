@@ -36,6 +36,12 @@ interface UserStats {
   overallCompletion: number
 }
 
+/** Fetch logs, optionally restricted to admin-verified entries. */
+function logQuery(client: any, table: string, columns: string, verifiedOnly: boolean) {
+  const q = client.from(table).select(columns)
+  return verifiedOnly ? q.eq('verified', true) : q
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -43,6 +49,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url)
+    const adjudication = url.searchParams.get('adjudication') === 'official' ? 'official' : 'provisional'
+    const verifiedOnly = adjudication === 'official'
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
@@ -62,10 +71,10 @@ Deno.serve(async (req) => {
 
     // Fetch all workout logs
     const [cardioRes, strengthRes, hiitRes, tmarmRes] = await Promise.all([
-      supabase.from('cardio_logs').select('user_id, distance'),
-      supabase.from('strength_logs').select('user_id, total_weight'),
-      supabase.from('hiit_logs').select('user_id, duration'),
-      supabase.from('tmarm_logs').select('user_id, duration'),
+      logQuery(supabase, 'cardio_logs', 'user_id, distance', verifiedOnly),
+      logQuery(supabase, 'strength_logs', 'user_id, total_weight', verifiedOnly),
+      logQuery(supabase, 'hiit_logs', 'user_id, duration', verifiedOnly),
+      logQuery(supabase, 'tmarm_logs', 'user_id, duration', verifiedOnly),
     ])
 
     if (cardioRes.error) throw cardioRes.error
@@ -175,8 +184,7 @@ Deno.serve(async (req) => {
         challengeMinimums: CHALLENGE_MINIMUMS,
         completionWeights: COMPLETION_WEIGHTS,
         totalParticipants: rankedData.length,
-        // Standings are PROVISIONAL: pending logs are included and may change after admin review.
-        adjudication: 'provisional',
+        adjudication,
         generatedAt: new Date().toISOString(),
       }),
       {

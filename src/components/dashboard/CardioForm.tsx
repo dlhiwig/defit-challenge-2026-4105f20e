@@ -73,6 +73,7 @@ export function CardioForm() {
         type: data.type as CardioType,
         distance: distanceInMiles,
         distanceUnit: data.distanceUnit,
+        originalDistance: data.distance,
         notes: data.notes,
       });
 

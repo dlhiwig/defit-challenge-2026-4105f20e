@@ -96,6 +96,8 @@ export type Database = {
           distance_unit: string
           id: string
           notes: string | null
+          original_distance: number | null
+          original_unit: string | null
           user_id: string
           verified: boolean
           verified_at: string | null
@@ -110,6 +112,8 @@ export type Database = {
           distance_unit?: string
           id?: string
           notes?: string | null
+          original_distance?: number | null
+          original_unit?: string | null
           user_id: string
           verified?: boolean
           verified_at?: string | null
@@ -124,6 +128,8 @@ export type Database = {
           distance_unit?: string
           id?: string
           notes?: string | null
+          original_distance?: number | null
+          original_unit?: string | null
           user_id?: string
           verified?: boolean
           verified_at?: string | null
@@ -1080,6 +1086,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_log_date_in_cycle: { Args: { _date: string }; Returns: undefined }
+      challenge_window: {
+        Args: never
+        Returns: {
+          end_date: string
+          start_date: string
+        }[]
+      }
       get_mission_participant_count: {
         Args: { p_mission_id: string }
         Returns: number
