@@ -141,10 +141,13 @@ export default function Rankings() {
     pageSize: PAGE_SIZES.includes(Number(searchParams.get('size'))) ? Number(searchParams.get('size')) : 25,
     q: searchParams.get('q') ?? '',
     compare: searchParams.get('compare') === '1',
+    adjudication: (searchParams.get('adjudication') === 'official' ? 'official' : 'provisional') as Adjudication,
   }).current;
 
   const [level, setLevel] = useState<RankingLevel>(initial.level);
   const [dataset, setDataset] = useState<Dataset>(initial.dataset);
+  // provisional = all logs in the window; official = admin-verified logs only
+  const [adjudication, setAdjudication] = useState<Adjudication>(initial.adjudication);
   const [data, setData] = useState<RankEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [windowRange, setWindowRange] = useState<{ start?: string | null; end?: string | null }>({});
@@ -190,7 +193,7 @@ export default function Rankings() {
   const highlightedRef = useRef<HTMLTableRowElement | null>(null);
   const highlightedMobileRef = useRef<HTMLDivElement | null>(null);
 
-  const cacheKey = `rankings:v1:${dataset}:${level}`;
+  const cacheKey = `rankings:v1:${dataset}:${level}:${adjudication}`;
   const otherDataset: Dataset = dataset === 'cycle' ? 'sample' : 'cycle';
   const datasetLabel = (d: Dataset) => (d === 'cycle' ? '2027 Cycle' : 'Sample Data');
 
@@ -212,6 +215,7 @@ export default function Rankings() {
           body: {
             level,
             dataset,
+            adjudication,
             limit: 500,
             search: opts.search ?? '',
             findMe: opts.findMe ?? '',
@@ -255,7 +259,7 @@ export default function Rankings() {
         setFindingMe(false);
       }
     },
-    [level, dataset, cacheKey, applyPayload]
+    [level, dataset, adjudication, cacheKey, applyPayload]
   );
 
   const firstLoad = useRef(true);
@@ -293,7 +297,7 @@ export default function Rankings() {
       return;
     }
     fetchRankings();
-  }, [level, dataset, cacheKey, fetchRankings, applyPayload, initial.q]);
+  }, [level, dataset, adjudication, cacheKey, fetchRankings, applyPayload, initial.q]);
 
   // Compare mode pulls the counterpart dataset for the same level.
   useEffect(() => {
@@ -308,7 +312,7 @@ export default function Rankings() {
     (async () => {
       try {
         const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
-          body: { level, dataset: otherDataset, limit: 500, search: '', findMe: '' },
+          body: { level, dataset: otherDataset, adjudication, limit: 500, search: '', findMe: '' },
         });
         if (fnError) throw fnError;
         if (res?.error) throw new Error(res.error);
@@ -339,6 +343,7 @@ export default function Rankings() {
     const params = new URLSearchParams();
     if (level !== 'individual') params.set('level', level);
     if (dataset !== 'cycle') params.set('dataset', dataset);
+    if (adjudication !== 'provisional') params.set('adjudication', adjudication);
     if (sortKey !== 'rank') params.set('sort', sortKey);
     if (sortDirection !== 'asc') params.set('dir', sortDirection);
     if (page > 1) params.set('page', String(page));
@@ -346,7 +351,7 @@ export default function Rankings() {
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
     if (compare) params.set('compare', '1');
     setSearchParams(params, { replace: true });
-  }, [level, dataset, sortKey, sortDirection, page, pageSize, searchQuery, compare, setSearchParams]);
+  }, [level, dataset, adjudication, sortKey, sortDirection, page, pageSize, searchQuery, compare, setSearchParams]);
 
 
   // Debounced search
@@ -515,7 +520,7 @@ export default function Rankings() {
       {/* Disclaimer */}
       <section className="pb-6">
         <div className="container px-4 max-w-4xl mx-auto space-y-4">
-          <ProvisionalStandingsNotice />
+          <ProvisionalStandingsNotice adjudication={adjudication} />
 
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -565,6 +570,46 @@ export default function Rankings() {
                 }`}
               >
                 Sample Data
+              </button>
+            </div>
+          </div>
+
+          <div className="glass rounded-xl p-4 mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-start gap-3">
+              {adjudication === 'official'
+                ? <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                : <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />}
+              <div>
+                <p className="text-sm font-heading font-bold">
+                  {adjudication === 'official' ? 'Official standings (verified only)' : 'Provisional standings (all logs)'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {adjudication === 'official'
+                    ? 'Counts only workouts an administrator has verified — the basis for awards.'
+                    : 'Includes pending and flagged workouts for immediate feedback; may change after review.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex rounded-lg border border-border overflow-hidden self-start" role="group" aria-label="Adjudication">
+              <button
+                type="button"
+                onClick={() => setAdjudication('provisional')}
+                aria-pressed={adjudication === 'provisional'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  adjudication === 'provisional' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Provisional
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdjudication('official')}
+                aria-pressed={adjudication === 'official'}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  adjudication === 'official' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Official
               </button>
             </div>
           </div>
