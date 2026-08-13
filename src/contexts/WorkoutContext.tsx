@@ -221,6 +221,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       hiitLogs,
       tmarmLogs,
       totals,
+      verifiedTotals,
       loading,
       addCardioLog,
       addStrengthLog,
