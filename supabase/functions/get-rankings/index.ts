@@ -13,12 +13,18 @@ import type { EntityMetrics, RankResult } from '../_shared/scoring-engine.ts'
 
 // ─── MAIN HANDLER ───
 
+/** Fetch competition logs, optionally restricted to admin-verified entries. */
+function logQuery(client: any, table: string, columns: string, verifiedOnly: boolean) {
+  const q = client.from(table).select(columns).limit(50000)
+  return verifiedOnly ? q.eq('verified', true) : q
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
     // Parse params from URL (GET) or body (POST)
-    let level = 'individual', limit = 50, search = '', findMe = '', dataset = 'cycle'
+    let level = 'individual', limit = 50, search = '', findMe = '', dataset = 'cycle', adjudication = 'provisional'
     if (req.method === 'POST') {
       try {
         const body = await req.json()
@@ -27,6 +33,7 @@ Deno.serve(async (req) => {
         search = (body.search || '').trim()
         findMe = (body.findMe || '').trim()
         dataset = body.dataset || dataset
+        adjudication = body.adjudication || adjudication
       } catch { /* use defaults */ }
     } else {
       const url = new URL(req.url)
@@ -35,6 +42,7 @@ Deno.serve(async (req) => {
       search = (url.searchParams.get('search') || '').trim()
       findMe = (url.searchParams.get('findMe') || '').trim()
       dataset = url.searchParams.get('dataset') || dataset
+      adjudication = url.searchParams.get('adjudication') || adjudication
     }
 
     if (!['individual', 'team', 'unit', 'command'].includes(level)) {
@@ -43,6 +51,9 @@ Deno.serve(async (req) => {
       })
     }
     if (!['cycle', 'sample'].includes(dataset)) dataset = 'cycle'
+    // 'official' counts only admin-verified logs; 'provisional' includes pending logs
+    if (!['provisional', 'official'].includes(adjudication)) adjudication = 'provisional'
+    const verifiedOnly = adjudication === 'official'
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
@@ -59,10 +70,10 @@ Deno.serve(async (req) => {
     // Fetch all data in parallel
     const [profilesRes, cardioRes, strengthRes, hiitRes, tmarmRes, teamsRes, membersRes, commandsRes] = await Promise.all([
       supabase.from('profiles').select('user_id, full_name, unit, unit_category, command_id').limit(10000),
-      supabase.from('cardio_logs').select('user_id, date, distance').limit(50000),
-      supabase.from('strength_logs').select('user_id, date, total_weight').limit(50000),
-      supabase.from('hiit_logs').select('user_id, date, duration').limit(50000),
-      supabase.from('tmarm_logs').select('user_id, date, duration').limit(50000),
+      logQuery(supabase, 'cardio_logs', 'user_id, date, distance', verifiedOnly),
+      logQuery(supabase, 'strength_logs', 'user_id, date, total_weight', verifiedOnly),
+      logQuery(supabase, 'hiit_logs', 'user_id, date, duration', verifiedOnly),
+      logQuery(supabase, 'tmarm_logs', 'user_id, date, duration', verifiedOnly),
       level === 'team' ? supabase.from('teams').select('id, name, is_usar') : Promise.resolve({ data: [], error: null }),
       level === 'team' ? supabase.from('team_members').select('team_id, user_id') : Promise.resolve({ data: [], error: null }),
       level === 'command' ? supabase.from('commands').select('id, name') : Promise.resolve({ data: [], error: null }),
@@ -252,8 +263,8 @@ Deno.serve(async (req) => {
       level, dataset, data: outputData, total: totalRanked,
       searchTotal: searchApplied ? results.length : undefined,
       challengeStart: challengeStart.toISOString(), challengeEnd, cycle, scoringWeeks,
-      // Standings are PROVISIONAL: pending logs are included and may change after admin review.
-      adjudication: 'provisional',
+      // provisional = pending logs included (may change after review); official = verified logs only
+      adjudication,
       datasetStart, datasetEnd,
       generatedAt: new Date().toISOString(),
       foundMe,
