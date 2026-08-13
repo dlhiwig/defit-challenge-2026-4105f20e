@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ProvisionalStandingsNotice } from '@/components/ProvisionalStandingsNotice';
+import type { Adjudication } from '@/components/ProvisionalStandingsNotice';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -20,7 +21,7 @@ import {
 import {
   Trophy, Medal, Award, Loader2, Info, Users, Shield, BookOpen, Search, X, UserCheck,
   RefreshCw, WifiOff, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  CalendarDays, FlaskConical, Download, Link2, Columns3, Minus,
+  CalendarDays, FlaskConical, Download, Link2, Columns3, Minus, ShieldCheck, Clock,
 } from 'lucide-react';
 import type { RankEntry, RankingLevel } from '@/lib/scoring';
 import { RANKING_LEVELS, COMPONENT_LABELS } from '@/lib/scoring';
