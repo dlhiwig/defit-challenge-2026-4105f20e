@@ -327,7 +327,7 @@ describe('synthetic competition simulation', () => {
     expect(first.map(r => r.entityId)).toEqual(second.map(r => r.entityId))
     expect(first.map(r => r.finalRank)).toEqual([1, 2, 3, 4, 5])
     expect(first[0].entityId).toBe('fabricated')
-    expect(first.at(-1)!.entityId).toBe('casual')
+    expect(first[first.length - 1].entityId).toBe('casual')
 
     // Capped pillars neutralise fabricated HIIT/TMAR-M volume.
     const fab = first.find(r => r.entityId === 'fabricated')!
