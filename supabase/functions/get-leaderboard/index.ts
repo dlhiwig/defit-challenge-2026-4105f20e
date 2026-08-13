@@ -175,6 +175,8 @@ Deno.serve(async (req) => {
         challengeMinimums: CHALLENGE_MINIMUMS,
         completionWeights: COMPLETION_WEIGHTS,
         totalParticipants: rankedData.length,
+        // Standings are PROVISIONAL: pending logs are included and may change after admin review.
+        adjudication: 'provisional',
         generatedAt: new Date().toISOString(),
       }),
       {
