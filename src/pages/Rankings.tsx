@@ -513,7 +513,9 @@ export default function Rankings() {
 
       {/* Disclaimer */}
       <section className="pb-6">
-        <div className="container px-4 max-w-4xl mx-auto">
+        <div className="container px-4 max-w-4xl mx-auto space-y-4">
+          <ProvisionalStandingsNotice />
+
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-amber-200/80">
