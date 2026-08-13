@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ProvisionalStandingsNotice } from '@/components/ProvisionalStandingsNotice';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -521,7 +522,11 @@ export default function Leaderboard() {
       {/* Navigation to New Rankings */}
       <section className="pb-6">
         <div className="container px-4">
+          <div className="max-w-4xl mx-auto mb-6">
+            <ProvisionalStandingsNotice />
+          </div>
           <div className="flex flex-col items-center gap-4">
+
             <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20 max-w-xl">
               <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
