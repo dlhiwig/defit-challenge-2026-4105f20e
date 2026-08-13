@@ -10,6 +10,7 @@ import {
   CHALLENGE_MINIMUMS,
   CardioType,
 } from '@/types/workout';
+import { CHALLENGE_START, CHALLENGE_END } from '@/lib/challenge';
 
 interface WorkoutContextType {
   cardioLogs: CardioLog[];
@@ -17,6 +18,8 @@ interface WorkoutContextType {
   hiitLogs: HIITLog[];
   tmarmLogs: TMARMLog[];
   totals: WorkoutTotals;
+  /** Totals from admin-verified logs only (official scoring basis). */
+  verifiedTotals: WorkoutTotals;
   loading: boolean;
   addCardioLog: (log: Omit<CardioLog, 'id' | 'createdAt'>) => Promise<void>;
   addStrengthLog: (log: Omit<StrengthLog, 'id' | 'createdAt'>) => Promise<void>;
@@ -62,7 +65,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
           date: new Date(row.date),
           type: row.cardio_type as CardioType,
           distance: Number(row.distance),
-          distanceUnit: row.distance_unit as 'miles' | 'meters',
+          distanceUnit: (row.original_unit || row.distance_unit || 'miles') as 'miles' | 'meters',
+          originalDistance: row.original_distance != null ? Number(row.original_distance) : undefined,
           notes: row.notes || undefined,
           verified: row.verified,
           createdAt: new Date(row.created_at),
@@ -116,13 +120,23 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     refreshLogs();
   }, [user]);
 
-  // Calculate totals
-  const totals: WorkoutTotals = {
-    cardioMiles: cardioLogs.reduce((sum, log) => sum + log.distance, 0),
-    strengthLbs: strengthLogs.reduce((sum, log) => sum + log.totalWeight, 0),
-    hiitMinutes: hiitLogs.reduce((sum, log) => sum + log.duration, 0),
-    tmarmMinutes: tmarmLogs.reduce((sum, log) => sum + log.duration, 0),
+  // Only activity inside the DEFIT cycle window counts toward challenge progress,
+  // so the dashboard can never disagree with the scoring engine.
+  const inCycle = (date: Date) => date >= CHALLENGE_START && date <= CHALLENGE_END;
+
+  const sumTotals = (onlyVerified: boolean): WorkoutTotals => {
+    const keep = <T extends { date: Date; verified?: boolean }>(log: T) =>
+      inCycle(log.date) && (!onlyVerified || log.verified === true);
+    return {
+      cardioMiles: cardioLogs.filter(keep).reduce((sum, log) => sum + log.distance, 0),
+      strengthLbs: strengthLogs.filter(keep).reduce((sum, log) => sum + log.totalWeight, 0),
+      hiitMinutes: hiitLogs.filter(keep).reduce((sum, log) => sum + log.duration, 0),
+      tmarmMinutes: tmarmLogs.filter(keep).reduce((sum, log) => sum + log.duration, 0),
+    };
   };
+
+  const totals: WorkoutTotals = sumTotals(false);
+  const verifiedTotals: WorkoutTotals = sumTotals(true);
 
   const addCardioLog = async (log: Omit<CardioLog, 'id' | 'createdAt'>) => {
     if (!user) throw new Error('Must be logged in');
@@ -131,8 +145,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       user_id: user.id,
       date: log.date.toISOString().split('T')[0],
       cardio_type: log.type,
+      // Server canonicalizes to miles; we submit exactly what the participant entered
       distance: log.distance,
       distance_unit: log.distanceUnit,
+      original_distance: log.originalDistance ?? log.distance,
+      original_unit: log.distanceUnit,
       notes: log.notes || null,
     });
 
@@ -150,6 +167,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       sets: log.sets,
       reps_per_set: log.repsPerSet,
       weight_per_rep: log.weightPerRep,
+      // total_weight is recomputed server-side; sent only for legacy compatibility
       total_weight: log.totalWeight,
       notes: log.notes || null,
     });

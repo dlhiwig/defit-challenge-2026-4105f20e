@@ -6,8 +6,9 @@ export interface CardioLog {
   id: string;
   date: Date;
   type: CardioType;
-  distance: number; // stored in miles
-  distanceUnit: 'miles' | 'meters';
+  distance: number; // canonical miles (server-computed)
+  distanceUnit: 'miles' | 'meters'; // unit the participant entered
+  originalDistance?: number; // value as entered, in `distanceUnit`
   notes?: string;
   verified?: boolean;
   createdAt: Date;
