@@ -1,25 +1,24 @@
 import { Link } from 'react-router-dom';
-import { CalendarClock, Dumbbell, Trophy } from 'lucide-react';
-import {
-  CHALLENGE_WEEKS,
-  activeCycle,
-  cycleStatus,
-  currentWeek,
-  weeksRemaining,
-  daysUntilStart,
-  previousCycle,
-} from '@/lib/challenge';
+import { CalendarClock, ClipboardList, Dumbbell, Trophy } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useChallengeSeason } from '@/hooks/useChallengeSeason';
+import { daysUntil, weekOf, weeksLeft } from '@/lib/challengeSeason';
 
 /**
- * DEFIT runs for 10 weeks each year, but the platform is open all 365 days.
- * Between cycles this counts down to the next one and points at the last results.
+ * DEFIT trains year-round; the annual Challenge is one 10-week season inside it.
+ * Season dates and state come from the database, so nothing here is hardcoded.
  */
 export function CycleStatusBanner({ className = '' }: { className?: string }) {
-  const cycle = activeCycle();
-  const status = cycleStatus();
-  const previous = previousCycle();
-  const days = daysUntilStart();
-  const left = weeksRemaining();
+  const { season, seasons, loading } = useChallengeSeason();
+
+  if (loading) {
+    return <Skeleton className={`h-28 w-full rounded-2xl ${className}`} />;
+  }
+  if (!season) return null;
+
+  const completedSeasons = seasons.filter((s) => s.state === 'complete');
+  const lastComplete = completedSeasons.length > 0 ? completedSeasons[0] : null;
+  const days = daysUntil(season.start);
 
   return (
     <div className={`glass rounded-2xl p-5 md:p-6 ${className}`}>
@@ -27,24 +26,44 @@ export function CycleStatusBanner({ className = '' }: { className?: string }) {
         <div className="flex items-start gap-3">
           <CalendarClock className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
           <div>
-            {status === 'active' ? (
+            {season.state === 'active' && (
               <>
                 <p className="font-heading font-bold">
-                  {cycle.label} is live — week {currentWeek()} of {CHALLENGE_WEEKS}
+                  {season.label} Challenge is live — week {weekOf(season)} of {season.scoringWeeks}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {left} week{left === 1 ? '' : 's'} left in the scoring window ({cycle.dateRange}).
+                  {weeksLeft(season)} week{weeksLeft(season) === 1 ? '' : 's'} left in the scoring window (
+                  {season.dateRange}).
                 </p>
               </>
-            ) : (
+            )}
+            {season.state === 'registration' && (
               <>
                 <p className="font-heading font-bold">
-                  Off-season — {cycle.label} opens in {days} day{days === 1 ? '' : 's'}
+                  Registration is open for the {season.label} Challenge
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Next 10-week cycle: {cycle.dateRange}. Keep training year-round — everything you log
-                  now is saved to your history, and only workouts dated inside the cycle count toward
-                  standings.
+                  Scoring runs {season.dateRange}. Keep training now — today's sessions build your history
+                  and your habits.
+                </p>
+              </>
+            )}
+            {season.state === 'off_season' && (
+              <>
+                <p className="font-heading font-bold">
+                  Training season — {season.label} Challenge starts in {days} day{days === 1 ? '' : 's'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Next {season.scoringWeeks}-week season: {season.dateRange}. Everything you log stays in
+                  your permanent history; only workouts inside the season count toward standings.
+                </p>
+              </>
+            )}
+            {season.state === 'complete' && (
+              <>
+                <p className="font-heading font-bold">{season.label} Challenge is complete</p>
+                <p className="text-sm text-muted-foreground">
+                  Final standings are published. Training continues year-round — keep the streak going.
                 </p>
               </>
             )}
@@ -59,13 +78,29 @@ export function CycleStatusBanner({ className = '' }: { className?: string }) {
             <Dumbbell className="w-4 h-4" />
             Log training
           </Link>
-          {status !== 'active' && previous && (
+          {season.state === 'registration' && (
             <Link
-              to="/rankings"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              to="/register"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              <ClipboardList className="w-4 h-4" />
+              Register
+            </Link>
+          )}
+          <Link
+            to={`/challenge/${season.year}`}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          >
+            <Trophy className="w-4 h-4" />
+            {season.state === 'active' ? 'Challenge hub' : `${season.label} Challenge`}
+          </Link>
+          {season.state !== 'active' && lastComplete && lastComplete.year !== season.year && (
+            <Link
+              to={`/challenge/${lastComplete.year}/rankings`}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
             >
               <Trophy className="w-4 h-4" />
-              {previous.label} results
+              {lastComplete.label} results
             </Link>
           )}
         </div>
