@@ -158,6 +158,117 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_cycles: {
+        Row: {
+          code: string
+          created_at: string
+          end_date: string
+          id: string
+          is_published: boolean
+          name: string
+          registration_close: string
+          registration_open: string
+          rules_version: string
+          scoring_weeks: number
+          start_date: string
+          status_override: Database["public"]["Enums"]["challenge_state"] | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_published?: boolean
+          name: string
+          registration_close: string
+          registration_open: string
+          rules_version?: string
+          scoring_weeks?: number
+          start_date: string
+          status_override?:
+            | Database["public"]["Enums"]["challenge_state"]
+            | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          registration_close?: string
+          registration_open?: string
+          rules_version?: string
+          scoring_weeks?: number
+          start_date?: string
+          status_override?:
+            | Database["public"]["Enums"]["challenge_state"]
+            | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      challenge_enrollments: {
+        Row: {
+          challenge_cycle_id: string
+          command: string | null
+          created_at: string
+          email: string
+          email_reminders: boolean
+          full_name: string
+          id: string
+          legacy_registration_id: string | null
+          source: string
+          status: string
+          unit_category: Database["public"]["Enums"]["unit_category"] | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          challenge_cycle_id: string
+          command?: string | null
+          created_at?: string
+          email: string
+          email_reminders?: boolean
+          full_name: string
+          id?: string
+          legacy_registration_id?: string | null
+          source?: string
+          status?: string
+          unit_category?: Database["public"]["Enums"]["unit_category"] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          challenge_cycle_id?: string
+          command?: string | null
+          created_at?: string
+          email?: string
+          email_reminders?: boolean
+          full_name?: string
+          id?: string
+          legacy_registration_id?: string | null
+          source?: string
+          status?: string
+          unit_category?: Database["public"]["Enums"]["unit_category"] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_enrollments_challenge_cycle_id_fkey"
+            columns: ["challenge_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commands: {
         Row: {
           created_at: string
@@ -1086,13 +1197,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      active_challenge_cycle: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          end_date: string
+          id: string
+          is_published: boolean
+          name: string
+          registration_close: string
+          registration_open: string
+          rules_version: string
+          scoring_weeks: number
+          start_date: string
+          status_override: Database["public"]["Enums"]["challenge_state"] | null
+          updated_at: string
+          year: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "challenge_cycles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       assert_log_date_in_cycle: { Args: { _date: string }; Returns: undefined }
+      challenge_cycle_state: {
+        Args: {
+          _cycle: Database["public"]["Tables"]["challenge_cycles"]["Row"]
+        }
+        Returns: Database["public"]["Enums"]["challenge_state"]
+      }
       challenge_window: {
         Args: never
         Returns: {
           end_date: string
           start_date: string
         }[]
+      }
+      current_challenge_state: {
+        Args: never
+        Returns: Database["public"]["Enums"]["challenge_state"]
       }
       defit_cycle_start: { Args: { _year: number }; Returns: string }
       get_mission_participant_count: {
@@ -1110,6 +1256,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "soldier"
       cardio_type: "run_walk_ruck" | "bike" | "swim" | "row_elliptical"
+      challenge_state: "off_season" | "registration" | "active" | "complete"
       day_progress_status:
         | "not_started"
         | "in_progress"
@@ -1261,6 +1408,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "soldier"],
       cardio_type: ["run_walk_ruck", "bike", "swim", "row_elliptical"],
+      challenge_state: ["off_season", "registration", "active", "complete"],
       day_progress_status: [
         "not_started",
         "in_progress",

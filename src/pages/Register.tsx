@@ -122,6 +122,30 @@ export default function Register() {
         });
       }
 
+      // Dual-write to the season-scoped enrollment table when we already have a session.
+      // Registrations made before email confirmation are linked server-side from the legacy row.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const sessionUserId = sessionData.session?.user.id;
+      if (sessionUserId) {
+        const { data: cycleRow } = await supabase
+          .from('challenge_cycles')
+          .select('id')
+          .eq('code', CHALLENGE_CYCLE)
+          .maybeSingle();
+
+        if (cycleRow) {
+          await supabase.from('challenge_enrollments').insert({
+            challenge_cycle_id: cycleRow.id,
+            user_id: sessionUserId,
+            full_name: data.fullName,
+            email: data.email.toLowerCase(),
+            unit_category: data.unitCategory,
+            command: data.command || null,
+            email_reminders: data.emailReminders,
+          });
+        }
+      }
+
       sessionStorage.setItem(
         'defit_registration',
         JSON.stringify({ fullName: data.fullName, email: data.email, emailReminders: data.emailReminders })

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -35,6 +35,8 @@ import AuthCallback from "./pages/AuthCallback";
 import RegistrationConfirmed from "./pages/RegistrationConfirmed";
 import ProgressTracker from "./pages/ProgressTracker";
 import NotificationSettings from "./pages/NotificationSettings";
+import ChallengeIndex from "./pages/challenge/ChallengeIndex";
+import ChallengeSeason from "./pages/challenge/ChallengeSeason";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +77,18 @@ const App = () => (
               <Route path="/rankings" element={<Rankings />} />
               <Route path="/scoring" element={<Scoring />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* Annual DEFIT Challenge — a seasonal module inside the year-round platform */}
+              <Route path="/challenge" element={<ChallengeIndex />} />
+              <Route path="/challenge/:year" element={<ChallengeSeason />} />
+              <Route path="/challenge/:year/rankings" element={<Rankings />} />
+              <Route path="/challenge/:year/rules" element={<Rules />} />
+              <Route
+                path="/challenge/:year/progress"
+                element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>}
+              />
+              <Route path="/challenge/:year/register" element={<Navigate to="/register" replace />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
