@@ -1094,6 +1094,7 @@ export type Database = {
           start_date: string
         }[]
       }
+      defit_cycle_start: { Args: { _year: number }; Returns: string }
       get_mission_participant_count: {
         Args: { p_mission_id: string }
         Returns: number
