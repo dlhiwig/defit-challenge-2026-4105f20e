@@ -77,6 +77,18 @@ const App = () => (
               <Route path="/rankings" element={<Rankings />} />
               <Route path="/scoring" element={<Scoring />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* Annual DEFIT Challenge — a seasonal module inside the year-round platform */}
+              <Route path="/challenge" element={<ChallengeIndex />} />
+              <Route path="/challenge/:year" element={<ChallengeSeason />} />
+              <Route path="/challenge/:year/rankings" element={<Rankings />} />
+              <Route path="/challenge/:year/rules" element={<Rules />} />
+              <Route
+                path="/challenge/:year/progress"
+                element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>}
+              />
+              <Route path="/challenge/:year/register" element={<Navigate to="/register" replace />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
