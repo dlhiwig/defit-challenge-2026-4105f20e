@@ -8,6 +8,8 @@ import { StrengthForm } from '@/components/dashboard/StrengthForm';
 import { HIITForm } from '@/components/dashboard/HIITForm';
 import { TMARMForm } from '@/components/dashboard/TMARMForm';
 import { ProgressSummary } from '@/components/dashboard/ProgressSummary';
+import CycleStatusBanner from '@/components/CycleStatusBanner';
+
 import { WorkoutProvider } from '@/contexts/WorkoutContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,7 +145,15 @@ function DashboardContent() {
         </div>
       </section>
 
+      {/* Cycle status — the site is open year-round */}
+      <section className="pb-4">
+        <div className="container px-4">
+          <CycleStatusBanner />
+        </div>
+      </section>
+
       {/* My Missions */}
+
       <section className="pb-4">
         <div className="container px-4">
           <MyMissions />

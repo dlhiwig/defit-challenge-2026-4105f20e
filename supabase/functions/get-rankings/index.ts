@@ -61,10 +61,15 @@ Deno.serve(async (req) => {
     const { data: configRows } = await supabase.from('challenge_config').select('key, value')
     const cfg: Record<string, string> = {}
     configRows?.forEach(r => { cfg[r.key] = r.value })
-    let challengeStart = new Date(cfg.challenge_start_date || DEFAULT_CHALLENGE_START)
+    // Config overrides only apply while they describe the active/upcoming cycle;
+    // stale rows from a previous year must not freeze standings in the past.
+    const today = new Date().toISOString().slice(0, 10)
+    const overrideValid = Boolean(cfg.challenge_start_date && cfg.challenge_end_date && cfg.challenge_end_date >= today)
+    let challengeStart = new Date(overrideValid ? cfg.challenge_start_date : DEFAULT_CHALLENGE_START)
     let scoringWeeks = parseInt(cfg.scoring_weeks || String(DEFAULT_SCORING_WEEKS))
-    const challengeEnd = cfg.challenge_end_date || DEFAULT_CHALLENGE_END
-    const cycle = cfg.cycle || CHALLENGE_CYCLE
+    const challengeEnd = overrideValid ? cfg.challenge_end_date : DEFAULT_CHALLENGE_END
+    const cycle = (overrideValid && cfg.cycle) ? cfg.cycle : CHALLENGE_CYCLE
+
 
 
     // Fetch all data in parallel
