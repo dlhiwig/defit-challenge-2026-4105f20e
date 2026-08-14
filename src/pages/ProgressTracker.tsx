@@ -174,14 +174,16 @@ function ProgressTrackerContent() {
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl">
             HIIT and TMAR-M status toward the {CHALLENGE_MINIMUMS.hiitMinutes}-minute {CHALLENGE_LABEL}{' '}
-            minimums ({CHALLENGE_DATE_RANGE}).
+            minimums ({CHALLENGE_DATE_RANGE}). Logging stays open all year — off-season sessions are
+            kept in your history without affecting standings.
           </p>
           <p className="inline-flex items-center gap-2 text-sm text-primary mt-3">
             <CalendarClock className="w-4 h-4" />
-            {status === 'upcoming' && `Cycle starts soon — ${CHALLENGE_WEEKS} weeks of logging ahead`}
+            {status === 'upcoming' && `${CHALLENGE_LABEL} opens in ${daysUntilStart()} days — off-season training still counts for you`}
             {status === 'active' && `Week ${week} of ${CHALLENGE_WEEKS} — ${left} week${left === 1 ? '' : 's'} remaining`}
             {status === 'complete' && 'Cycle complete — final verification in progress'}
           </p>
+
         </div>
       </section>
 
