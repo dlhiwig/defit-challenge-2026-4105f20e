@@ -1,9 +1,43 @@
 // DEFIT OML scoring engine — pure, framework-free so it can be unit tested.
 // Single source of truth for ranking math shared by edge functions and tests.
 
-export const DEFAULT_CHALLENGE_START = '2027-01-11'
-export const DEFAULT_CHALLENGE_END = '2027-03-21'
-export const CHALLENGE_CYCLE = 'DEFIT2027'
+// DEFIT recurs every year: each cycle starts on the second Monday of January and
+// runs 10 weeks. The platform itself stays open all 365 days.
+export const SCORING_WEEKS = 10
+
+const isoDate = (d: Date) => d.toISOString().slice(0, 10)
+
+/** Second Monday of January (UTC) for a given year. */
+export function cycleStartForYear(year: number): Date {
+  const d = new Date(Date.UTC(year, 0, 1))
+  while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() + 1)
+  d.setUTCDate(d.getUTCDate() + 7)
+  return d
+}
+
+export function cycleEndForYear(year: number): Date {
+  const end = cycleStartForYear(year)
+  end.setUTCDate(end.getUTCDate() + SCORING_WEEKS * 7 - 1)
+  return end
+}
+
+/** Active cycle: this year's while it is still running, otherwise next year's. */
+export function activeCycleWindow(now: Date = new Date()): { year: number; start: string; end: string; cycle: string } {
+  let year = now.getUTCFullYear()
+  if (now > cycleEndForYear(year)) year += 1
+  return {
+    year,
+    start: isoDate(cycleStartForYear(year)),
+    end: isoDate(cycleEndForYear(year)),
+    cycle: `DEFIT${year}`,
+  }
+}
+
+const ACTIVE_CYCLE = activeCycleWindow()
+export const DEFAULT_CHALLENGE_START = ACTIVE_CYCLE.start
+export const DEFAULT_CHALLENGE_END = ACTIVE_CYCLE.end
+export const CHALLENGE_CYCLE = ACTIVE_CYCLE.cycle
+
 
 // ─── CONSTANTS ───
 export const HIIT_WEEKLY_CAP = 45
