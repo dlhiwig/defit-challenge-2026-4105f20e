@@ -143,7 +143,15 @@ function DashboardContent() {
         </div>
       </section>
 
+      {/* Cycle status — the site is open year-round */}
+      <section className="pb-4">
+        <div className="container px-4">
+          <CycleStatusBanner />
+        </div>
+      </section>
+
       {/* My Missions */}
+
       <section className="pb-4">
         <div className="container px-4">
           <MyMissions />
