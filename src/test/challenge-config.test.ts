@@ -29,11 +29,53 @@ describe('challenge configuration is consistent front to back', () => {
     expect(CHALLENGE_WEEKS).toBe(DEFAULT_SCORING_WEEKS)
   })
 
-  it('labels and copy reference the 2027 cycle', () => {
-    expect(CHALLENGE_LABEL).toContain('2027')
-    expect(CHALLENGE_DATE_RANGE).toContain('2027')
+  it('labels and copy reference the active cycle year', () => {
+    const year = CHALLENGE_START.getFullYear()
+    expect(CHALLENGE_LABEL).toContain(String(year))
+    expect(CHALLENGE_DATE_RANGE).toContain(String(year))
+    expect(CHALLENGE_CYCLE).toBe(`DEFIT${year}`)
   })
 })
+
+describe('annual auto-roll', () => {
+  it('starts each cycle on the second Monday of January', () => {
+    expect(iso(cycleForYear(2027).start)).toBe('2027-01-11')
+    expect(iso(cycleForYear(2028).start)).toBe('2028-01-10')
+    expect(cycleForYear(2029).start.getDay()).toBe(1)
+  })
+
+  it('runs ten weeks and ends on a Sunday', () => {
+    for (const y of [2027, 2028, 2029]) {
+      const c = cycleForYear(y)
+      const days = Math.round((c.end.setHours(0, 0, 0, 0) - c.start.getTime()) / 86400000)
+      expect(days).toBe(CHALLENGE_WEEKS * 7 - 1)
+    }
+  })
+
+  it('rolls to next year once the cycle has ended', () => {
+    expect(activeCycle(new Date('2027-02-01T00:00:00')).year).toBe(2027)
+    expect(activeCycle(new Date('2027-06-01T00:00:00')).year).toBe(2028)
+    expect(activeCycle(new Date('2028-01-05T00:00:00')).year).toBe(2028)
+  })
+
+  it('reports the previous cycle only after one has finished', () => {
+    expect(previousCycle(new Date('2026-08-01T00:00:00'))).toBeNull()
+    expect(previousCycle(new Date('2027-06-01T00:00:00'))?.year).toBe(2027)
+  })
+
+  it('classifies off-season activity as outside any cycle', () => {
+    expect(cycleForDate(new Date('2027-02-01T00:00:00'))?.year).toBe(2027)
+    expect(cycleForDate(new Date('2027-08-01T00:00:00'))).toBeNull()
+  })
+
+  it('counts days until the next cycle opens', () => {
+    expect(daysUntilStart(new Date('2027-01-01T00:00:00'))).toBe(10)
+    expect(daysUntilStart(new Date('2027-02-01T00:00:00'))).toBe(0)
+    expect(isOffSeason(new Date('2027-08-01T00:00:00'))).toBe(true)
+    expect(isOffSeason(new Date('2027-02-01T00:00:00'))).toBe(false)
+  })
+})
+
 
 describe('cycle week math', () => {
   it('reports upcoming, active and complete states', () => {
