@@ -11,8 +11,11 @@ const Navbar = () => {
     label: "About",
     href: "/about"
   }, {
-    label: "Rules",
-    href: "/rules"
+    label: "Missions",
+    href: "/missions"
+  }, {
+    label: "Challenge",
+    href: "/challenge"
   }, {
     label: "Rankings",
     href: "/rankings"
@@ -20,20 +23,16 @@ const Navbar = () => {
     label: "Resources",
     href: "/resources"
   }, {
-    label: "Missions",
-    href: "/missions"
-  }, {
     label: "FAQ",
     href: "/faq"
-  }, {
-    label: "Register",
-    href: "/register"
   }, {
     label: "Dashboard",
     href: "/dashboard"
   }];
   const isActive = (href: string) => {
     if (href.startsWith("/#")) return false;
+    // Seasonal challenge routes are nested, so highlight the section, not one page
+    if (href === "/challenge") return location.pathname.startsWith("/challenge");
     return location.pathname === href;
   };
   return <nav className="fixed top-0 left-0 right-0 z-50 glass">
