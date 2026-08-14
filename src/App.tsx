@@ -35,6 +35,8 @@ import AuthCallback from "./pages/AuthCallback";
 import RegistrationConfirmed from "./pages/RegistrationConfirmed";
 import ProgressTracker from "./pages/ProgressTracker";
 import NotificationSettings from "./pages/NotificationSettings";
+import ChallengeIndex from "./pages/challenge/ChallengeIndex";
+import ChallengeSeason from "./pages/challenge/ChallengeSeason";
 
 const queryClient = new QueryClient();
 
