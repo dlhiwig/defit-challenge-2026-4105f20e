@@ -39,9 +39,9 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 sm:h-20 md:h-24">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group" aria-label="DEFIT 2027 — Double Eagle Fitness Challenge home">
+          <Link to="/" className="flex items-center gap-3 group" aria-label="DEFIT — year-round fitness and readiness platform, home">
             <img
-              alt="DEFIT 2027 emblem: gold kettlebell with a mirrored double eagle head"
+              alt="DEFIT emblem: gold kettlebell with a mirrored double eagle head"
               src={defitEmblem.url}
               width={96}
               height={96}
@@ -49,7 +49,7 @@ const Navbar = () => {
               className="h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16 md:h-20 md:w-20"
             />
             <span className="text-lg font-heading font-bold text-foreground uppercase tracking-wider hidden sm:block">
-              DEFIT 2027 
+              DEFIT
             </span>
           </Link>
 
