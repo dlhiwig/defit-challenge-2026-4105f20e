@@ -85,24 +85,30 @@ describe('annual auto-roll', () => {
 
 
 describe('cycle week math', () => {
-  it('reports upcoming, active and complete states', () => {
+  it('reports upcoming and active states, rolling to next year off-season', () => {
     expect(cycleStatus(new Date('2026-12-01T00:00:00'))).toBe('upcoming')
     expect(cycleStatus(new Date('2027-02-01T00:00:00'))).toBe('active')
-    expect(cycleStatus(new Date('2027-04-01T00:00:00'))).toBe('complete')
+    // After the 2027 cycle ends the next cycle is upcoming, not "complete"
+    expect(cycleStatus(new Date('2027-04-01T00:00:00'))).toBe('upcoming')
+    expect(cycleStatus(new Date('2027-03-21T08:00:00'))).toBe('active')
   })
 
-  it('clamps the week index to the cycle', () => {
+  it('clamps the week index to the active cycle', () => {
     expect(currentWeek(new Date('2027-01-11T08:00:00'))).toBe(1)
     expect(currentWeek(new Date('2027-01-18T08:00:00'))).toBe(2)
     expect(currentWeek(new Date('2027-03-21T08:00:00'))).toBe(CHALLENGE_WEEKS)
-    expect(currentWeek(new Date('2027-06-01T08:00:00'))).toBe(CHALLENGE_WEEKS)
+    // Off-season falls before the next cycle, so it clamps to week 1
+    expect(currentWeek(new Date('2027-06-01T08:00:00'))).toBe(1)
     expect(currentWeek(new Date('2026-01-01T08:00:00'))).toBe(1)
   })
 
-  it('counts remaining weeks and hits zero after the cycle', () => {
+  it('counts weeks remaining in the active cycle', () => {
     expect(weeksRemaining(new Date('2027-01-11T00:00:00'))).toBe(CHALLENGE_WEEKS)
-    expect(weeksRemaining(new Date('2027-04-01T00:00:00'))).toBe(0)
+    expect(weeksRemaining(new Date('2027-03-20T00:00:00'))).toBe(1)
+    // Off-season points at the next cycle, a full 10 weeks long
+    expect(weeksRemaining(new Date('2027-04-01T00:00:00'))).toBe(CHALLENGE_WEEKS)
   })
+
 
   it('computes required weekly pace toward a minimum', () => {
     expect(requiredPacePerWeek(480, 480, new Date('2027-02-01T00:00:00'))).toBe(0)
