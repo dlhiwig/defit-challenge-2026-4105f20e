@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import defitEmblem from "@/assets/defit-kettlebell-eagle.png.asset.json";
+import defitEmblem from "@/assets/defit-logo.png";
 import { Mail, Instagram, Facebook, Youtube } from "lucide-react";
 
 const footerLinks = {
@@ -38,7 +38,7 @@ const Footer = () => {
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
                 alt="DEFIT 2027 emblem: gold kettlebell with a mirrored double eagle head"
-                src={defitEmblem.url}
+                src={defitEmblem}
                 width={192}
                 height={192}
                 loading="lazy"
