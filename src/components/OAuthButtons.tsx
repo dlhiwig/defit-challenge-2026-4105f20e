@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 export default function OAuthButtons() {
   const { toast } = useToast();
   const { signInWithGoogle, signInWithApple } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState<'google' | 'apple' | null>(null);
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
@@ -23,12 +21,6 @@ export default function OAuthButtons() {
         variant: 'destructive',
       });
       setLoading(null);
-    } else {
-      toast({
-        title: 'Welcome!',
-        description: 'Signed in successfully.',
-      });
-      navigate('/dashboard');
     }
   };
 
