@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import { Link } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { ExternalLink, FileText, Video, BookOpen, Heart, Brain, Apple, Moon, Play } from "lucide-react";
 
@@ -116,6 +117,10 @@ const Resources = () => {
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               H2F <span className="text-gradient">Resources</span>
             </h1>
+            <div className="flex flex-wrap justify-center gap-4 mb-6 underline underline-offset-4">
+              <Link to="/waist-to-height">Waist-to-height calculator</Link>
+              <Link to="/h2f">H2F sponsor and supporting images</Link>
+            </div>
             <p className="text-lg text-muted-foreground mb-8">
               Training guides, nutrition info, mental readiness tools, and safety guidelines 
               to support your fitness journey.

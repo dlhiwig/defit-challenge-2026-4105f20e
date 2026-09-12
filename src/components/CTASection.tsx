@@ -21,14 +21,14 @@ const CTASection = () => {
             Ready to Begin Your <span className="text-gradient">Mission?</span>
           </h2>
           <p className="text-muted-foreground text-lg mb-10 max-w-2xl mx-auto">
-            Join thousands of warriors who have already transformed themselves. 
-            Your path to elite fitness starts with a single step.
+            Build your training routine throughout the year. Explore seasonal
+            challenges and check each event's dates and participation requirements.
           </p>
 
           {/* CTA */}
           <Button variant="hero" size="lg" asChild>
             <Link to="/register">
-              Enlist Now
+              Join DeFit
               <ArrowRight className="w-5 h-5" />
             </Link>
           </Button>
@@ -37,7 +37,7 @@ const CTASection = () => {
           <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-muted-foreground uppercase tracking-wide">
             <span>✓ Free to participate</span>
             <span>✓ Open to all Army Reserve Soldiers</span>
-            <span>✓ 11 Jan – 21 Mar 2027</span>
+            <span>✓ Year-round training</span>
           </div>
         </div>
       </div>

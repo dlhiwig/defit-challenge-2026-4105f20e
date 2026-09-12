@@ -9,6 +9,8 @@ const footerLinks = {
     { label: "Leaderboard", href: "/leaderboard" },
   ],
   Resources: [
+    { label: "H2F Sponsor & Resources", href: "/h2f" },
+    { label: "Waist-to-height calculator", href: "/waist-to-height" },
     { label: "H2F Resources", href: "/resources" },
     { label: "Training Tips", href: "/resources" },
     { label: "Safety Guidelines", href: "/resources" },

@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import H2F from "./pages/H2F";
+import WaistToHeight from "./pages/WaistToHeight";
 import About from "./pages/About";
 import Rules from "./pages/Rules";
 import Resources from "./pages/Resources";
@@ -50,6 +52,8 @@ const App = () => (
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/h2f" element={<H2F />} />
+              <Route path="/waist-to-height" element={<WaistToHeight />} />
               <Route path="/about" element={<About />} />
               <Route path="/rules" element={<Rules />} />
               <Route path="/resources" element={<Resources />} />

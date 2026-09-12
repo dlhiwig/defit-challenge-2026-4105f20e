@@ -24,7 +24,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse-glow" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              11 Jan – 21 Mar 2027
+              Double Eagle Fitness • Year-round readiness
             </span>
           </div>
 
@@ -37,21 +37,22 @@ const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
-            The DEFIT 2027 Double Eagle Fitness Challenge — a 10-week H2F program
-            building physical and spiritual readiness across the Army Reserve.
+            Train throughout the year with Double Eagle Fitness. Build lasting
+            habits, track your progress, and join seasonal challenges—including
+            the Double Eagle Challenge starting each January after the holidays.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button variant="hero" size="lg" className="w-full sm:w-auto font-heading" asChild>
-              <Link to="/register">
-                Register Now
+              <Link to="/dashboard">
+                Log Workout
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
             <Button variant="glass" size="lg" className="w-full sm:w-auto font-heading" asChild>
-              <Link to="/about">
-                Learn More
+              <Link to="/challenge">
+                Explore Challenges
               </Link>
             </Button>
           </div>
@@ -59,9 +60,9 @@ const HeroSection = () => {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto">
             {[
-              { value: "10", label: "Week Challenge" },
-              { value: "4", label: "Fitness Pillars" },
-              { value: "H2F", label: "Focused" },
+              { value: "365", label: "Days of Readiness" },
+              { value: "4", label: "Workout Categories" },
+              { value: "5", label: "H2F Domains" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl md:text-3xl font-heading font-bold text-gradient">{stat.value}</div>
