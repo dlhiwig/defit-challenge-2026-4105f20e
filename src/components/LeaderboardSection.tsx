@@ -1,12 +1,14 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Trophy, Medal, Award } from "lucide-react";
+import { supabase, isDemoMode } from "@/integrations/supabase/client";
 
-const leaderboardData = [
-  { rank: 1, name: "Sarah Chen", points: 24580, avatar: "SC", streak: 45 },
-  { rank: 2, name: "Marcus Johnson", points: 23120, avatar: "MJ", streak: 38 },
-  { rank: 3, name: "Elena Rodriguez", points: 21890, avatar: "ER", streak: 52 },
-  { rank: 4, name: "James Wilson", points: 20450, avatar: "JW", streak: 29 },
-  { rank: 5, name: "Aisha Patel", points: 19870, avatar: "AP", streak: 33 },
-];
+interface BoardEntry {
+  rank: number;
+  name: string;
+  overallCompletion: number;
+  unit: string | null;
+}
 
 const getRankIcon = (rank: number) => {
   switch (rank) {
@@ -22,87 +24,131 @@ const getRankIcon = (rank: number) => {
 };
 
 const LeaderboardSection = () => {
+  const [entries, setEntries] = useState<BoardEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      if (isDemoMode) {
+        setLoaded(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke("get-leaderboard");
+        if (error) throw error;
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        if (!cancelled) {
+          setEntries(
+            rows.slice(0, 5).map((entry: BoardEntry) => ({
+              rank: entry.rank,
+              name: entry.name || "Anonymous Soldier",
+              overallCompletion: Number(entry.overallCompletion) || 0,
+              unit: entry.unit ?? null,
+            })),
+          );
+        }
+      } catch {
+        if (!cancelled) setEntries([]);
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section id="leaderboard" className="py-24 relative">
-      {/* Background accent */}
       <div className="absolute inset-0 bg-hero-gradient opacity-30" />
-      
+
       <div className="container px-4 relative">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
           <div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Compete with the <span className="text-gradient">Elite</span>
+              Compete with the <span className="text-gradient">Force</span>
             </h2>
             <p className="text-muted-foreground text-lg mb-8">
-              Our global leaderboard showcases top performers from around the world. 
-              Track your ranking, earn badges, and rise through the ranks.
+              Standings come from verified workout logs in this challenge cycle.
+              Rankings stay provisional until USARC validation.
             </p>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <div className="glass p-6 rounded-2xl">
-                <div className="text-3xl font-heading font-bold text-gradient mb-2">150+</div>
-                <div className="text-muted-foreground text-sm uppercase tracking-wide">Countries Represented</div>
+                <div className="text-3xl font-heading font-bold text-gradient mb-2">10</div>
+                <div className="text-muted-foreground text-sm uppercase tracking-wide">Week Season</div>
               </div>
               <div className="glass p-6 rounded-2xl">
-                <div className="text-3xl font-heading font-bold text-gradient mb-2">$50K</div>
-                <div className="text-muted-foreground text-sm uppercase tracking-wide">Monthly Prizes</div>
+                <div className="text-3xl font-heading font-bold text-gradient mb-2">4</div>
+                <div className="text-muted-foreground text-sm uppercase tracking-wide">Event Types</div>
               </div>
             </div>
           </div>
 
-          {/* Leaderboard Card */}
           <div className="glass rounded-2xl p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">Global Rankings</h3>
-              <span className="text-sm text-muted-foreground uppercase tracking-wide">This Month</span>
+              <h3 className="text-xl font-bold text-foreground">Current Standings</h3>
+              <span className="text-sm text-muted-foreground uppercase tracking-wide">Verified logs</span>
             </div>
 
-            <div className="space-y-4">
-              {leaderboardData.map((user, index) => (
-                <div
-                  key={user.rank}
-                  className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:bg-secondary/50 ${
-                    index === 0 ? "bg-primary/10 border border-primary/20" : ""
-                  }`}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  {/* Rank */}
-                  <div className="w-8 flex justify-center">
-                    {getRankIcon(user.rank)}
-                  </div>
-
-                  {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-heading font-bold text-sm ${
-                    index === 0 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-secondary text-secondary-foreground"
-                  }`}>
-                    {user.avatar}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1">
-                    <div className="font-semibold text-foreground">{user.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      🔥 {user.streak} day streak
+            {!loaded ? (
+              <div className="space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-16 rounded-xl bg-secondary/40 animate-pulse" />
+                ))}
+              </div>
+            ) : entries.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-8 text-center">
+                No scored participants yet. Standings appear here when verified
+                cardio, strength, HIIT, or TMAR-M logs are posted.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {entries.map((user, index) => (
+                  <div
+                    key={`${user.rank}-${user.name}`}
+                    className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:bg-secondary/50 ${
+                      index === 0 ? "bg-primary/10 border border-primary/20" : ""
+                    }`}
+                  >
+                    <div className="w-8 flex justify-center">{getRankIcon(user.rank)}</div>
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-heading font-bold text-sm ${
+                        index === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                      }`}
+                    >
+                      {user.name
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground">{user.name}</div>
+                      <div className="text-xs text-muted-foreground">{user.unit || "Unit not listed"}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-heading font-bold text-foreground">
+                        {user.overallCompletion.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">complete</div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  {/* Points */}
-                  <div className="text-right">
-                    <div className="font-heading font-bold text-foreground">
-                      {user.points.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground uppercase">points</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button className="w-full mt-6 text-primary font-heading font-semibold hover:underline underline-offset-4 transition-all uppercase tracking-wider">
+            <Link
+              to="/leaderboard"
+              className="block w-full mt-6 text-center text-primary font-heading font-semibold hover:underline underline-offset-4 transition-all uppercase tracking-wider"
+            >
               View Full Leaderboard →
-            </button>
+            </Link>
           </div>
         </div>
       </div>

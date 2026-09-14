@@ -63,10 +63,12 @@ function MissionCard({ mission }: { mission: Mission }) {
             <Clock className="w-3.5 h-3.5" />
             {formatDuration(mission.duration_days, mission.duration_weeks)}
           </span>
-          <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" />
-            {mission.participant_count} enrolled
-          </span>
+          {user && (mission.participant_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" />
+              {mission.participant_count} enrolled
+            </span>
+          )}
         </div>
         {isActive && (
           <div className="mt-3">
@@ -146,7 +148,7 @@ export default function Missions() {
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             />
           </div>
-          <Select value={filters.difficulty || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, difficulty: v === "all" ? "" : v as any }))}>
+          <Select value={filters.difficulty || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, difficulty: v === "all" ? "" : v as MissionDifficulty }))}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Difficulties</SelectItem>
@@ -155,7 +157,7 @@ export default function Missions() {
               <SelectItem value="advanced">Advanced</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filters.focus || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, focus: v === "all" ? "" : v as any }))}>
+          <Select value={filters.focus || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, focus: v === "all" ? "" : v as MissionFocus }))}>
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Focus" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Focus</SelectItem>
@@ -167,7 +169,7 @@ export default function Missions() {
               <SelectItem value="extreme">Extreme</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filters.duration || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, duration: v === "all" ? "" : v as any }))}>
+          <Select value={filters.duration || "all"} onValueChange={(v) => setFilters((f) => ({ ...f, duration: v === "all" ? "" : v }))}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Duration" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Durations</SelectItem>
@@ -177,7 +179,7 @@ export default function Missions() {
               <SelectItem value="12+weeks">12+ weeks</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filters.sort} onValueChange={(v) => setFilters((f) => ({ ...f, sort: v as any }))}>
+          <Select value={filters.sort} onValueChange={(v) => setFilters((f) => ({ ...f, sort: v as MissionsFilter["sort"] }))}>
             <SelectTrigger className="w-[170px]"><SelectValue placeholder="Sort" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="popular">Most Popular</SelectItem>

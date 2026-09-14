@@ -13,8 +13,10 @@ const env = (globalThis as { process?: { env?: Record<string, string | undefined
 const testEmail = env.TEST_USER;
 const testPassword = env.TEST_PASS;
 
+const live = Boolean(url && key);
+
 const makeClient = () =>
-  createClient(url ?? "http://localhost", key ?? "anon", {
+  createClient(url as string, key as string, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
@@ -23,8 +25,12 @@ const FAKE_UUID = "00000000-0000-0000-0000-000000000000";
 const readBlocked = (error: unknown, data: unknown) =>
   Boolean(error) || (Array.isArray(data) && data.length === 0);
 
-describe.runIf(!!url && !!key)("service-role-only tables are locked down for anon", () => {
-  const anon = makeClient();
+describe.runIf(live)("service-role-only tables are locked down for anon", () => {
+  let anon: SupabaseClient;
+
+  beforeAll(() => {
+    anon = makeClient();
+  });
 
   it("cannot read digest_queue", async () => {
     const { data, error } = await anon.from("digest_queue").select("*").limit(1);
@@ -77,7 +83,7 @@ describe.runIf(!!url && !!key)("service-role-only tables are locked down for ano
   });
 });
 
-describe.runIf(!!url && !!key && !!testEmail && !!testPassword)(
+describe.runIf(live && !!testEmail && !!testPassword)(
   "signed-in users without service_role stay locked out",
   () => {
     let client: SupabaseClient;

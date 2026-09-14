@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,40 +8,47 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
-import H2F from "./pages/H2F";
-import WaistToHeight from "./pages/WaistToHeight";
-import About from "./pages/About";
-import Rules from "./pages/Rules";
-import Resources from "./pages/Resources";
-import Dashboard from "./pages/Dashboard";
-import WorkoutHistory from "./pages/WorkoutHistory";
-import ProfileSettings from "./pages/ProfileSettings";
-import Leaderboard from "./pages/Leaderboard";
-import LeaderboardUnits from "./pages/LeaderboardUnits";
-import Auth from "./pages/Auth";
-import AdminVerifyLogs from "./pages/AdminVerifyLogs";
-import Notifications from "./pages/Notifications";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import FAQ from "./pages/FAQ";
-import ReportIssue from "./pages/ReportIssue";
-import ContactPOC from "./pages/ContactPOC";
-import SecurityCompliance from "./pages/SecurityCompliance";
-import NotFound from "./pages/NotFound";
-import Missions from "./pages/Missions";
-import MissionDetail from "./pages/MissionDetail";
-import Rankings from "./pages/Rankings";
-import Scoring from "./pages/Scoring";
-import ResetPassword from "./pages/ResetPassword";
-import Register from "./pages/Register";
-import AuthCallback from "./pages/AuthCallback";
-import RegistrationConfirmed from "./pages/RegistrationConfirmed";
-import ProgressTracker from "./pages/ProgressTracker";
-import NotificationSettings from "./pages/NotificationSettings";
-import ChallengeIndex from "./pages/challenge/ChallengeIndex";
-import ChallengeSeason from "./pages/challenge/ChallengeSeason";
+
+const H2F = lazy(() => import("./pages/H2F"));
+const WaistToHeight = lazy(() => import("./pages/WaistToHeight"));
+const About = lazy(() => import("./pages/About"));
+const Rules = lazy(() => import("./pages/Rules"));
+const Resources = lazy(() => import("./pages/Resources"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const WorkoutHistory = lazy(() => import("./pages/WorkoutHistory"));
+const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const LeaderboardUnits = lazy(() => import("./pages/LeaderboardUnits"));
+const Auth = lazy(() => import("./pages/Auth"));
+const AdminVerifyLogs = lazy(() => import("./pages/AdminVerifyLogs"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const ReportIssue = lazy(() => import("./pages/ReportIssue"));
+const ContactPOC = lazy(() => import("./pages/ContactPOC"));
+const SecurityCompliance = lazy(() => import("./pages/SecurityCompliance"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Missions = lazy(() => import("./pages/Missions"));
+const MissionDetail = lazy(() => import("./pages/MissionDetail"));
+const Rankings = lazy(() => import("./pages/Rankings"));
+const Scoring = lazy(() => import("./pages/Scoring"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Register = lazy(() => import("./pages/Register"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const RegistrationConfirmed = lazy(() => import("./pages/RegistrationConfirmed"));
+const ProgressTracker = lazy(() => import("./pages/ProgressTracker"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const ChallengeIndex = lazy(() => import("./pages/challenge/ChallengeIndex"));
+const ChallengeSeason = lazy(() => import("./pages/challenge/ChallengeSeason"));
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -50,52 +58,52 @@ const App = () => (
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/h2f" element={<H2F />} />
-              <Route path="/waist-to-height" element={<WaistToHeight />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/rules" element={<Rules />} />
-              <Route path="/resources" element={<Resources />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/dashboard/history" element={<ProtectedRoute><WorkoutHistory /></ProtectedRoute>} />
-              <Route path="/dashboard/progress" element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/register/confirmed" element={<RegistrationConfirmed />} />
-              <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/report-issue" element={<ReportIssue />} />
-              <Route path="/contact" element={<ContactPOC />} />
-              <Route path="/security" element={<SecurityCompliance />} />
-              <Route path="/missions" element={<Missions />} />
-              <Route path="/missions/:slug" element={<MissionDetail />} />
-              <Route path="/rankings" element={<Rankings />} />
-              <Route path="/scoring" element={<Scoring />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/h2f" element={<H2F />} />
+                <Route path="/waist-to-height" element={<WaistToHeight />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/rules" element={<Rules />} />
+                <Route path="/resources" element={<Resources />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/leaderboard/units" element={<LeaderboardUnits />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/dashboard/history" element={<ProtectedRoute><WorkoutHistory /></ProtectedRoute>} />
+                <Route path="/dashboard/progress" element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/register/confirmed" element={<RegistrationConfirmed />} />
+                <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+                <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/admin/verify-logs" element={<ProtectedRoute><AdminVerifyLogs /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/report-issue" element={<ReportIssue />} />
+                <Route path="/contact" element={<ContactPOC />} />
+                <Route path="/security" element={<SecurityCompliance />} />
+                <Route path="/missions" element={<Missions />} />
+                <Route path="/missions/:slug" element={<MissionDetail />} />
+                <Route path="/rankings" element={<Rankings />} />
+                <Route path="/scoring" element={<Scoring />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Annual DEFIT Challenge — a seasonal module inside the year-round platform */}
-              <Route path="/challenge" element={<ChallengeIndex />} />
-              <Route path="/challenge/:year" element={<ChallengeSeason />} />
-              <Route path="/challenge/:year/rankings" element={<Rankings />} />
-              <Route path="/challenge/:year/rules" element={<Rules />} />
-              <Route
-                path="/challenge/:year/progress"
-                element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>}
-              />
-              <Route path="/challenge/:year/register" element={<Navigate to="/register" replace />} />
+                <Route path="/challenge" element={<ChallengeIndex />} />
+                <Route path="/challenge/:year" element={<ChallengeSeason />} />
+                <Route path="/challenge/:year/rankings" element={<Rankings />} />
+                <Route path="/challenge/:year/rules" element={<Rules />} />
+                <Route
+                  path="/challenge/:year/progress"
+                  element={<ProtectedRoute><ProgressTracker /></ProtectedRoute>}
+                />
+                <Route path="/challenge/:year/register" element={<Navigate to="/register" replace />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>

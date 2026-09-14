@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import defitEmblem from "@/assets/defit-logo.png";
-import { Mail, Instagram, Facebook, Youtube } from "lucide-react";
+import { Mail } from "lucide-react";
 
 const footerLinks = {
   Challenge: [

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import kettlebellBadge from "@/assets/kettlebell-badge.png";
+import kettlebellBadge from "@/assets/kettlebell-badge.webp";
 const CTASection = () => {
   return <section className="py-24 relative overflow-hidden">
       {/* Background Effects */}
@@ -13,7 +13,7 @@ const CTASection = () => {
         <div className="glass rounded-3xl p-8 md:p-16 text-center max-w-4xl mx-auto">
           {/* Badge */}
           <div className="w-full max-w-md mx-auto mb-8 animate-float">
-            <img alt="Double Eagle Challenge Badge" className="w-full h-auto object-contain drop-shadow-2xl" src={kettlebellBadge} />
+            <img alt="Double Eagle Challenge Badge" className="w-full h-auto object-contain drop-shadow-2xl" src={kettlebellBadge} width={448} height={448} loading="lazy" decoding="async" />
           </div>
 
           {/* Content */}

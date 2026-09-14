@@ -6,7 +6,7 @@ interface ChallengeCardProps {
   title: string;
   description: string;
   duration: string;
-  participants: number;
+  participants?: number;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   image: string;
   category: string;
@@ -65,10 +65,12 @@ const ChallengeCard = ({
             <Clock className="w-4 h-4" />
             <span>{duration}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>{participants.toLocaleString()}</span>
-          </div>
+          {typeof participants === "number" && participants > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span>{participants.toLocaleString()} enrolled</span>
+            </div>
+          )}
         </div>
 
         <Button variant="outline" className="w-full font-heading uppercase tracking-wider" asChild>
