@@ -1,4 +1,4 @@
-project_id = "dzvghrttcsfqjxwbtrlv"
+project_id = "izqrmnplnzentcsujdcr"
 
 [functions.send-daily-digest]
 verify_jwt = false
