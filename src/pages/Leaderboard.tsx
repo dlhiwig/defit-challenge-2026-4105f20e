@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/integrations/supabase/client';
+import { invokeFunction } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProvisionalStandingsNotice } from '@/components/ProvisionalStandingsNotice';
@@ -210,9 +210,8 @@ export default function Leaderboard() {
     if (!opts.background) setError(null);
     attempts.current += 1;
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('get-leaderboard');
-      if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
+      const data = await invokeFunction<Record<string, unknown>>('get-leaderboard');
+      if (data?.error) throw new Error(String(data.error));
 
       const payload = normalize(data);
       setLeaderboard((prev) => {

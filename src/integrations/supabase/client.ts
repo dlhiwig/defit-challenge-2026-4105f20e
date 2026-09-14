@@ -18,3 +18,23 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(SUPABAS
     autoRefreshToken: true,
   }
 });
+
+/** Prefer Edge Functions; fall back to SECURITY DEFINER RPCs when none are deployed. */
+export async function invokeFunction<T>(name: string, body?: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, body ? { body } : {});
+  if (!error && data && typeof data === "object" && !("error" in (data as object) && (data as { error?: unknown }).error)) {
+    return data as T;
+  }
+
+  const rpcName = name.replaceAll("-", "_");
+  const args: Record<string, unknown> = { ...(body ?? {}) };
+  if ("findMe" in args) {
+    args.findme = args.findMe;
+    delete args.findMe;
+  }
+  const { data: fallback, error: rpcError } = await supabase.rpc(rpcName as never, args as never);
+  if (rpcError) {
+    throw error ?? rpcError;
+  }
+  return fallback as T;
+}

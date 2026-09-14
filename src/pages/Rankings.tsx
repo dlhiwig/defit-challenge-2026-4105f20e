@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/integrations/supabase/client';
+import { invokeFunction } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -212,17 +212,22 @@ export default function Rankings() {
       if (!opts.background) setError(null);
       const isPlain = !opts.search && !opts.findMe;
       try {
-        const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
-          body: {
-            level,
-            dataset,
-            adjudication,
-            limit: 500,
-            search: opts.search ?? '',
-            findMe: opts.findMe ?? '',
-          },
+        const res = await invokeFunction<{
+          data?: RankEntry[];
+          total?: number;
+          datasetStart?: string | null;
+          datasetEnd?: string | null;
+          searchTotal?: number;
+          foundMe?: RankEntry | null;
+          error?: string;
+        }>('get-rankings', {
+          level,
+          dataset,
+          adjudication,
+          limit: 500,
+          search: opts.search ?? '',
+          findMe: opts.findMe ?? '',
         });
-        if (fnError) throw fnError;
         if (res?.error) throw new Error(res.error);
 
         const payload: RankingsPayload = {
@@ -312,10 +317,9 @@ export default function Rankings() {
     setCompareError(null);
     (async () => {
       try {
-        const { data: res, error: fnError } = await supabase.functions.invoke('get-rankings', {
-          body: { level, dataset: otherDataset, adjudication, limit: 500, search: '', findMe: '' },
+        const res = await invokeFunction<{ data?: RankEntry[]; error?: string }>('get-rankings', {
+          level, dataset: otherDataset, adjudication, limit: 500, search: '', findMe: '',
         });
-        if (fnError) throw fnError;
         if (res?.error) throw new Error(res.error);
         if (!cancelled) setCompareData((res?.data ?? []) as RankEntry[]);
       } catch (err) {

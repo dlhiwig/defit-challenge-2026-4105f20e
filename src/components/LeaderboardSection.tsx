@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Medal, Award } from "lucide-react";
-import { supabase, isDemoMode } from "@/integrations/supabase/client";
+import { invokeFunction, isDemoMode } from "@/integrations/supabase/client";
 
 interface BoardEntry {
   rank: number;
@@ -36,8 +36,7 @@ const LeaderboardSection = () => {
         return;
       }
       try {
-        const { data, error } = await supabase.functions.invoke("get-leaderboard");
-        if (error) throw error;
+        const data = await invokeFunction<{ data?: BoardEntry[] }>("get-leaderboard");
         const rows = Array.isArray(data?.data) ? data.data : [];
         if (!cancelled) {
           setEntries(
